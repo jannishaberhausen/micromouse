@@ -12,4 +12,4 @@ Competitions and conferences are still run regularly.
 ----
 
 Useful Information about components, suppliers, etc.
- - PCB Manufacturer: Beta Layout
+ - PCB Manufacturer: Beta Layout - (note: design 10x10 cm boards max)
