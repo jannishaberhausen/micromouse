@@ -9,5 +9,7 @@ The maze is made up of a 16×16 grid of cells, each 180 mm square with walls 50 
 
 Competitions and conferences are still run regularly.
 
+----
+
 Useful Information about components, suppliers, etc.
  - PCB Manufacturer: Beta Layout
