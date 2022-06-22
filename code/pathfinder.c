@@ -1,22 +1,20 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "pathfinder.h"
+#include "pathfinder_tests.h" //REMOVE AFTER TESTING
 
 /** internal representation of the grid as a matrix of cells */
 cell maze[SIZE][SIZE];
+
+typedef struct coord {unsigned int x; unsigned int y;} coord;
 
 ///////////////////////////////////////////////////////////
 //                       DEBUG                           //
 ///////////////////////////////////////////////////////////
 
-cell env[8][8];
-int x;
-int y;
-orientation dir;
 
-void DEBUG_get_walls(int *left, int *front, int *right) {
-    *left = env[x][y].walls[(dir-1)%4];
-    *front = env[x][y].walls[dir];
-    *right = env[x][y].walls[(dir+1)%4];
+cell** DEBUG_get_maze() {
+    return (cell **) maze;
 }
 
 
@@ -131,7 +129,7 @@ direction explore(unsigned int x, unsigned int y, orientation dir) {
 /**
  * Find the shortest path to the goal.
  *
- * This function executes A* search on the maze,
+ * This function executes BFS on the maze,
  * using the data from the exploration phase, and returns
  * an array containing all necessary directions.
  * This offline-approach saves computation time during the race.
@@ -147,61 +145,133 @@ direction explore(unsigned int x, unsigned int y, orientation dir) {
  *
  * @return Array of directions leading to the goal
  */
-direction* exploit(unsigned int x, unsigned int y, direction dir,
+direction* exploit(unsigned int x, unsigned int y, orientation dir,
                    unsigned int x_dest, unsigned int y_dest) {
 
     // prepare the maze: use flag for distance
     for (int i = 0; i < SIZE; i++) {
         for (int j = 0; j < SIZE; j++) {
-            maze[i][j].flag = INF;
+            maze[i][j].flag = -1;
             for (int k = 0; k < 4; k++) {
                 maze[i][j].walls[k] = (maze[i][j].walls[k] > 0);
             }
         }
     }
-    maze[x_dest][y_dest].flag = 0;
+    maze[x][y].flag = 0;
 
-    cell *current = &maze[x][y];
+    cell *current;
+    cell *next;
 
-    //... create frontier, perform A*,
-    // calc and save directions for optimal path ...
+    //... create frontier, perform BFS,
 
-    return NULL;
-}
+    //we need max. SIZE elements in the frontier:
+    //max number of elements with equal distance to the start point
+    coord frontier[SIZE];
+    int head = 0;
+    int tail = 0;
+    frontier[tail].x = x;
+    frontier[tail].y = y;
+    tail ++;
 
-int main() {
+    //until goal found, iterate over frontier
+    while(1) {
+        coord pos = frontier[head];
+        current = &maze[pos.x][pos.y];
 
-    x = 0;
-    y = 0;
-    dir = NORTH;
-    direction move = STOP;
-
-    //TODO initialize env for different test cases
-
-    initMaze(x, y, dir);
-
-    do {
-        move = explore(x, y, dir);
-        dir = (dir+move)%4;
-
-        switch (dir) {
-            case NORTH:
-                y ++;
-                break;
-            case EAST:
-                x++;
-                break;
-            case SOUTH:
-                y--;
-                break;
-            case WEST:
-                x--;
-                break;
-            default:
-                break;
+        if(pos.x == x_dest && pos.y == y_dest) {
+            break;
         }
-        printf("%d, %d", x, y);
-    } while (move != STOP);
 
-    return 0;
+        if(current->walls[NORTH] == WAY) {
+            next = &maze[pos.x][pos.y+1];
+            if(next->flag < 0) {
+                next->walls[SOUTH] = ENTRY;
+                next->flag = current->flag + 1;
+                frontier[tail].x = pos.x;
+                frontier[tail].y = pos.y + 1;
+                tail = (tail + 1) % SIZE;
+            }
+        }
+
+        if(current->walls[EAST] == WAY) {
+            next = &maze[pos.x+1][pos.y];
+            if(next->flag < 0) {
+                next->walls[WEST] = ENTRY;
+                next->flag = current->flag + 1;
+                frontier[tail].x = pos.x + 1;
+                frontier[tail].y = pos.y;
+                tail = (tail + 1) % SIZE;
+            }
+        }
+
+        if(current->walls[SOUTH] == WAY) {
+            next = &maze[pos.x][pos.y-1];
+            if(next->flag < 0) {
+                next->walls[NORTH] = ENTRY;
+                next->flag = current->flag + 1;
+                frontier[tail].x = pos.x;
+                frontier[tail].y = pos.y - 1;
+                tail = (tail + 1) % SIZE;
+            }
+        }
+
+        if(current->walls[WEST] == WAY) {
+            next = &maze[pos.x-1][pos.y];
+            if(next->flag < 0) {
+                next->walls[EAST] = ENTRY;
+                next->flag = current->flag + 1;
+                frontier[tail].x = pos.x - 1;
+                frontier[tail].y = pos.y;
+                tail = (tail + 1) % SIZE;
+            }
+        }
+
+        head = (head+1)%SIZE;
+    }
+
+    // calc and save directions for optimal path ...
+    int path_len = maze[x_dest][y_dest].flag;
+    direction *path = malloc(path_len * sizeof(direction));
+
+    coord pos = {x, y};
+
+    for(int i = path_len-1; i >= 0; i--) {
+        for(int w = 0; w < 4; w++) {
+            if(maze[pos.x][pos.y].walls[w] == ENTRY) {
+                // save global direction first,
+                // convert to driving directions afterwards
+                path[i] = (w+2)%4;
+
+                switch (w) {
+                    case NORTH:
+                        pos.y ++;
+                        break;
+                    case EAST:
+                        pos.x ++;
+                        break;
+                    case SOUTH:
+                        pos.y --;
+                        break;
+                    case WEST:
+                        pos.x --;
+                        break;
+                    default:
+                        //start reached
+                        break;
+                }
+            }
+        }
+    }
+
+    if(pos.x != x || pos.y != y) {
+        printf("ERROR start position mismatch\n");
+    }
+
+    //convert orientation to direction
+    for(int i = 0; i < path_len; i++) {
+        path[i] = (path[i] - dir)%4;
+        dir = (orientation) path[i];
+    }
+
+    return path;
 }

@@ -1,8 +1,6 @@
 #ifndef CODE_PATHFINDER_H
 #define CODE_PATHFINDER_H
 
-// int_max on 16bit
-#define INF 65535
 
 // Size of the maze
 #define SIZE 16
@@ -55,7 +53,9 @@ typedef enum direction direction;
 
 void initMaze(unsigned int x, unsigned int y, orientation dir);
 direction explore(unsigned int x, unsigned int y, orientation dir);
-direction* exploit(unsigned int x, unsigned int y, direction dir,
-                   unsigned int x_dest, unsigned int y_dest)
+direction* exploit(unsigned int x, unsigned int y, orientation dir,
+                   unsigned int x_dest, unsigned int y_dest);
+
+cell** DEBUG_get_maze();
 
 #endif //CODE_PATHFINDER_H
