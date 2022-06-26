@@ -66,7 +66,7 @@ void initMaze(unsigned int x, unsigned int y, orientation dir) {
 direction explore(unsigned int x, unsigned int y, orientation dir) {
 
     // current cell
-    cell pos = maze[x][y];
+    cell* pos = &maze[x][y];
 
     // walls wrt. the current orientation
     wall left = UNKNOWN;
@@ -77,43 +77,43 @@ direction explore(unsigned int x, unsigned int y, orientation dir) {
     orientation next;
 
     // next actions depend on the state of the cell
-    switch (pos.flag) {
+    switch (pos->flag) {
         case 0:
             // first time visiting this cell
             // retrieve and fill in new info
             //TODO interpret sensor values to define
             DEBUG_get_walls(&left, &front, &right);
 
-            pos.walls[(dir-1)%4] = left;
-            pos.walls[dir] = front;
-            pos.walls[(dir+1)%4] = right;
+            pos->walls[(dir-1)%4] = left;
+            pos->walls[dir] = front;
+            pos->walls[(dir+1)%4] = right;
 
             // Set entrance. Special case in the start cell
-            if(pos.walls[(dir+2)%4] != WALL)
-                pos.walls[(dir+2)%4] = ENTRY;
+            if(pos->walls[(dir+2)%4] != WALL)
+                pos->walls[(dir+2)%4] = ENTRY;
 
-            pos.flag = 1;
+            pos->flag = 1;
             // continue exploring (no break!)
         case 1:
             // cell not yet fully explored, walls known
             // select next open wall to explore
             //TODO: prefer going straight
             for (next = 0; next < 4; next ++) {
-                if (pos.walls[next] == WAY) {
+                if (pos->walls[next] == WAY) {
                     // will be fully explored when we come back
-                    pos.walls[next] = EXPLORED;
+                    pos->walls[next] = EXPLORED;
                     //go on to explore this path
                     return (next - dir)%4;
                 }
             }
 
             // didn't find a wall to explore: completed cell
-            pos.flag = 2;
+            pos->flag = 2;
             // walk back (no break!)
         case 2:
             // cell fully explored, walk back to where we came from
             for (next = 0; next < 4; next++) {
-                if (pos.walls[next] == ENTRY) {
+                if (pos->walls[next] == ENTRY) {
                     //drive that way
                     return (next - dir)%4;
                 }
@@ -166,7 +166,7 @@ direction* exploit(unsigned int x, unsigned int y, orientation dir,
 
     //we need max. SIZE elements in the frontier:
     //max number of elements with equal distance to the start point
-    coord frontier[SIZE];
+    coord frontier[SIZE*SIZE];
     int head = 0;
     int tail = 0;
     frontier[tail].x = x;
@@ -189,7 +189,7 @@ direction* exploit(unsigned int x, unsigned int y, orientation dir,
                 next->flag = current->flag + 1;
                 frontier[tail].x = pos.x;
                 frontier[tail].y = pos.y + 1;
-                tail = (tail + 1) % SIZE;
+                tail = (tail + 1) % (SIZE*SIZE);
             }
         }
 
@@ -200,7 +200,7 @@ direction* exploit(unsigned int x, unsigned int y, orientation dir,
                 next->flag = current->flag + 1;
                 frontier[tail].x = pos.x + 1;
                 frontier[tail].y = pos.y;
-                tail = (tail + 1) % SIZE;
+                tail = (tail + 1) % (SIZE*SIZE);
             }
         }
 
@@ -211,7 +211,7 @@ direction* exploit(unsigned int x, unsigned int y, orientation dir,
                 next->flag = current->flag + 1;
                 frontier[tail].x = pos.x;
                 frontier[tail].y = pos.y - 1;
-                tail = (tail + 1) % SIZE;
+                tail = (tail + 1) % (SIZE*SIZE);
             }
         }
 
@@ -222,18 +222,19 @@ direction* exploit(unsigned int x, unsigned int y, orientation dir,
                 next->flag = current->flag + 1;
                 frontier[tail].x = pos.x - 1;
                 frontier[tail].y = pos.y;
-                tail = (tail + 1) % SIZE;
+                tail = (tail + 1) % (SIZE*SIZE);
             }
         }
 
-        head = (head+1)%SIZE;
+        head = (head+1)%(SIZE*SIZE);
     }
 
     // calc and save directions for optimal path ...
     int path_len = maze[x_dest][y_dest].flag;
-    direction *path = malloc(path_len * sizeof(direction));
+    direction *path = malloc((path_len+1) * sizeof(direction));
 
-    coord pos = {x, y};
+    coord pos = {x_dest, y_dest};
+    path[path_len] = STOP;
 
     for(int i = path_len-1; i >= 0; i--) {
         for(int w = 0; w < 4; w++) {
@@ -259,6 +260,7 @@ direction* exploit(unsigned int x, unsigned int y, orientation dir,
                         //start reached
                         break;
                 }
+                break;
             }
         }
     }
@@ -269,9 +271,11 @@ direction* exploit(unsigned int x, unsigned int y, orientation dir,
 
     //convert orientation to direction
     for(int i = 0; i < path_len; i++) {
+        orientation tmp = (orientation) path[i];
         path[i] = (path[i] - dir)%4;
-        dir = (orientation) path[i];
+        dir = tmp;
     }
+    printf("\n");
 
     return path;
 }
