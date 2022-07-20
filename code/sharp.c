@@ -78,6 +78,9 @@ void sharpRaw(int *left, int *front, int *right)
 /**
  * Collect a filtered and scaled measurement.
  * 
+ * !!!!!NUMBERS USE 12bit SAMPLING!!!!!!!!!!!
+ * not usable like that, update numbers.
+ * 
  * Output in 0.1 mm.
  * Used for motor control, especially for the front sensor.
  * 
@@ -163,7 +166,7 @@ void get_walls(int *left, int *front, int *right)
     f /= BUF_LEN;
     
     //output values 
-    *left = l < 870 ? 0 : 1;
-    *right = r < 870 ? 0 : 1;
-    *front = f < 870 ? 0 : 1;
+    *left = l < 217 ? 0 : 1;
+    *right = r < 217 ? 0 : 1;
+    *front = f < 217 ? 0 : 1;
 }

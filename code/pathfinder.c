@@ -112,6 +112,9 @@ direction explore(unsigned int x, unsigned int y, orientation dir) {
             // walk back (no break!)
         case 2:
             // cell fully explored, walk back to where we came from
+
+            //TODO check for goal area
+
             for (next = 0; next < 4; next++) {
                 if (pos->walls[next] == ENTRY) {
                     //drive that way
