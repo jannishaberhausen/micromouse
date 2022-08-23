@@ -3,8 +3,7 @@
 
 #include "IOconfig.h"
 #include "dma.h"
-
-#include <stdio.h>
+#include "sharp.h"
 
 #define BUF_LEN 10
 
@@ -24,7 +23,7 @@ int head = 0;
  * 
  * Initializes the ring buffer.
  */
-void startSharp() {
+void initSharp() {
     int empty;
     for(int i = 0; i < BUF_LEN; i++) {
         sharpRaw(&empty, &empty, &empty);

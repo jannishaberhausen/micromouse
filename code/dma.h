@@ -7,7 +7,7 @@
 //allocate four words of memory
 extern unsigned int adcData[48]__attribute__((space(dma)));
 
-void initDmaChannel4(void);
+void initDMA(void);
 
 //fast access to sensor readings
 #define SHARP_L adcData[0]

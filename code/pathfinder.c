@@ -126,6 +126,8 @@ direction explore(unsigned int x, unsigned int y, orientation dir) {
             return STOP;
     }
 
+    // should never be reached
+    return STOP;
 }
 
 

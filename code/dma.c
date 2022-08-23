@@ -11,7 +11,7 @@ unsigned int adcData[48]__attribute__((space(dma)));
  * DMA is started immediatelly.
  * Call this before initADC()!
  */
-void initDma() {
+void initDMA() {
 
 	DMA4CONbits.CHEN = 0;       // Disable channel
 	DMA4CONbits.SIZE = 0;       // Data transfer size (1=byte,0=word)

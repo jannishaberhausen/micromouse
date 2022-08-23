@@ -213,7 +213,7 @@ void DEBUG_get_walls(int *left, int *front, int *right) {
     *right = env[x][y].walls[(dir+1)%4];
 }
 
-int main() {
+int test_main() {
 
     x = 0;
     y = 0;
