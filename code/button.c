@@ -11,6 +11,8 @@
 void initSwitch() {
     //select CN27 for interrupts
     CNEN2bits.CN27IE = 1;
+    // TODO enable internal pullup
+    //CNPU2bits.CN27PUE = 1;
     
     //set priority, reset flag
     _CNIP = 5;

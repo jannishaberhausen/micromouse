@@ -163,6 +163,9 @@ void setupLED24_PWM() {
 void setupMotors() {
     // disable interrupts on the switch
     CNEN2bits.CN27IE = 0;
+    // TODO disable internal pullup
+    // CNPU2bits.CN27PUE = 0;
+    
     // Do we have to change TRISBbits.TRISB5 to output ?
     
     // reset PWM module
