@@ -138,12 +138,6 @@ void setupLED24_PWM() {
     MOTENL = 0;
     MOTENR = 0;
     
-    // set motor directions to save, known state
-    MOTINL1 = 0;
-    MOTINL2 = 0;
-    MOTINR1 = 0;
-    MOTINR2 = 0;
-    
     // enable PWM on LEDs
     PWM1CON1bits.PEN1L = 1;
     PWM1CON1bits.PEN2L = 1;
@@ -201,12 +195,6 @@ void setupSwitch() {
     // disable motors
     MOTENL = 0;
     MOTENR = 0;
-    
-    // set motor directions to save, known state
-    MOTINL1 = 0;
-    MOTINL2 = 0;
-    MOTINR1 = 0;
-    MOTINR2 = 0;
     
     // Activate the switch
     // Do we have to set TRISBbits.TRISB5 to input?
