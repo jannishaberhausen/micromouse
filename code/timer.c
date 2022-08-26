@@ -76,10 +76,11 @@ void __attribute__((__interrupt__, auto_psv)) _T1Interrupt(void)
     // isn't used. I did that, but the motors are too expensive to make a typo.
     // See IOConfig.c
     
-    testTimer();
+    //testTimer();
     //testSwitch();
+    //LED2 = SW1;
     //testLedPWM();
-    //testMotorPWM();
+    testMotorPWM();
     //testEncoders();
     //testSensorsLR();
     //testSensorsF();
