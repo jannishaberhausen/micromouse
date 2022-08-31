@@ -29,6 +29,8 @@
 #define LEDON 0
 #define LEDOFF 1
 
+#define SW1 !PORTBbits.RB5
+
 void setupIO();
 
 void setupLED24();
