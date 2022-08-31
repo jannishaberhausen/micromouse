@@ -82,6 +82,13 @@ void testLedPWM() {
 void testMotorPWM() {
     if(setup == 1) {
         setupMotors();
+        
+        // set motor directions: left fwd, right bwd
+        MOTINL1 = 1;
+        MOTINL2 = 0;
+        MOTINR1 = 0;
+        MOTINR2 = 1;
+        
         ctr = 0;
         setup = 0;
     }

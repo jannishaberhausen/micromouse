@@ -24,6 +24,9 @@ void setupIO()
     AD1PCFGLbits.PCFG3 = 0;
     AD1PCFGLbits.PCFG4 = 0;
     
+    // if cutting AN1 dosn't work, make AN7 analogue
+    //AD1PCFGLbits.PCFG7 = 0;
+    
     // set LEDs as output
     //TRISBbits.TRISB12 = 0;
     TRISBbits.TRISB13 = 0;
@@ -31,6 +34,7 @@ void setupIO()
     TRISBbits.TRISB15 = 0;
     
     // UART1 TX as output
+    // if cutting AN1 doesn't work, delete this
     TRISCbits.TRISC1 = 0;
     
 
@@ -61,7 +65,8 @@ void setupIO()
     //see table 11-2 in datasheet to check peripheral codes 
     
     // UART1 TX goes to RP17
-    RPOR8bits.RP17R = 0b00011; //output bin RP2 gets data from peripheral U1 TX 
+    // if cutting AN1 doesn't work, delete this
+    RPOR8bits.RP17R = 0b00011;
 
     
     
