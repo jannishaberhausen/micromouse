@@ -22,7 +22,8 @@ void initPWM()
     P1TCONbits.PTCKPS = 0b10; // Sets prescaler, available are 1(00),4(01),16(10) or 64(11)
     P1TPER = 9999; //15 bit register (Time Base Period )
     PWM1CON1bits.PMOD1 = 1; // set PWM unit 1 to independent mode
-    
+    PWM1CON1bits.PMOD2 = 1;
+    PWM1CON1bits.PMOD3 = 1;
     // diable all PWM pins
     PWM1CON1bits.PEN1H = 0; // disable PWM driver PWM1H1 (MOTORL, LED1)
     PWM1CON1bits.PEN2H = 0; // disable PWM driver PWM1H2 (MOTORR, LED3)

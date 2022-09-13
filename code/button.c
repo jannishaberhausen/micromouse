@@ -36,8 +36,10 @@ void __attribute__((__interrupt__, no_auto_psv)) _CNInterrupt(void)
      _CNIF = 0; 
 
      // Toggle LED2 and LED4
-     // LED2 = !LED2;
-     // LED4 = !LED4;
+     if(SW1) {
+        LED2 = !LED2;
+        LED4 = !LED4;
+     }
      
      // actual toggle in interrupt
      // LED4 = SW1;

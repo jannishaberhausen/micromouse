@@ -19,10 +19,10 @@
 // motor direction
 #define MOTINL1 LATBbits.LATB5
 #define MOTINL2 LATBbits.LATB6
-#define MOTINR1 LATBbits.LATB7
-#define MOTINR2 LATBbits.LATB8
+#define MOTINR1 LATBbits.LATB8
+#define MOTINR2 LATBbits.LATB7
 
-// motor enable bits when motrs are inactive
+// motor enable bits when motors are inactive
 #define MOTENL LATBbits.LATB14
 #define MOTENR LATBbits.LATB12
 

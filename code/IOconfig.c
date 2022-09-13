@@ -19,9 +19,9 @@ void setupIO()
     //all pins are now digital, by default they are analogue
     AD1PCFGL=0xFFFF;
     
-    //sharp sensors at AN2, AN3, and AN4 are analogue
-    AD1PCFGLbits.PCFG2 = 0;
-    AD1PCFGLbits.PCFG3 = 0;
+    //sharp sensors at AN0, AN1, and AN4 are analogue
+    AD1PCFGLbits.PCFG0 = 0;
+    AD1PCFGLbits.PCFG1 = 0;
     AD1PCFGLbits.PCFG4 = 0;
     
     // if cutting AN1 dosn't work, make AN7 analogue
@@ -32,6 +32,12 @@ void setupIO()
     TRISBbits.TRISB13 = 0;
     //TRISBbits.TRISB14 = 0;
     TRISBbits.TRISB15 = 0;
+    
+    // set MOTINxx as outputs
+    TRISBbits.TRISB5 = 0;
+    TRISBbits.TRISB6 = 0;
+    TRISBbits.TRISB8 = 0;
+    TRISBbits.TRISB7 = 0;
     
     // UART1 TX as output
     // if cutting AN1 doesn't work, delete this
@@ -121,6 +127,8 @@ void setupLED24() {
         // LED4 is set to PWM. Disable it
         PWM1CON1bits.PEN2L = 0;
     }
+    LED2 = LEDON;
+    LED4 = LEDON;
 }
 
 
@@ -140,8 +148,8 @@ void setupLED24_PWM() {
     initPWM();
     
     // disable motors
-    MOTENL = 0;
-    MOTENR = 0;
+    //MOTENL = 0;
+    //MOTENR = 0;
     
     // enable PWM on LEDs
     PWM1CON1bits.PEN1L = 1;
@@ -160,6 +168,7 @@ void setupLED24_PWM() {
  * Calls setupPWM().
  */
 void setupMotors() {
+    //setupLED24();
     // disable interrupts on the switch
     CNEN2bits.CN27IE = 0;
     // TODO disable internal pullup
@@ -175,8 +184,9 @@ void setupMotors() {
     MOTINL2 = 0;
     MOTINR1 = 0;
     MOTINR2 = 0;
-    
+        
     // enable PWM on the motors
+    TRISBbits.TRISB5 = 0;
     PWM1CON1bits.PEN1H = 1;
     PWM1CON1bits.PEN2H = 1;
 }
@@ -203,6 +213,7 @@ void setupSwitch() {
     
     // Activate the switch
     // Do we have to set TRISBbits.TRISB5 to input?
+    TRISBbits.TRISB5 = 1;
     initSwitch();
     startSwitch();
 }

@@ -26,7 +26,7 @@ void initDMA() {
 
 	DMA4STA = (__builtin_dmaoffset(&(adcData[0])));     // start address of DMA RAM
 	DMA4PAD = (volatile unsigned int) &ADC1BUF0;        // address of peripheral sfr (0x0300)
-	DMA4CNT = 4;	// number of samples, 1 for SCAN
+	DMA4CNT = 1;	// number of samples, 1 for SCAN
 
     // Interrupt settings
 	IFS2bits.DMA4IF = 0;	// Clear DMA interrupt
