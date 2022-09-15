@@ -8,6 +8,7 @@
 #include "dma.h"
 #include "adc.h"
 #include "sharp.h"
+#include "hw_tests.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -16,6 +17,9 @@ int setup = 1;
 
 int ctr = 0;
 
+int perform_only_once = 1;
+
+state mouseState;
 
 /**
  * Tests the switch.
@@ -175,4 +179,294 @@ void testSensorsF() {
     sharpRaw(&left, &front, &right);
 
     LED2DC = (1 - ((float) front / 1023.0)) * PWM_MAX;
+}
+
+
+/**
+ * Tests the motors.
+ * 
+ * Slowly turns both motors forward.
+ */
+void testMouseSlowMotionForward() {
+    if(setup == 1) {
+        setupMotors();
+        
+        setup = 0;
+    }
+    
+    // set motor directions. both forward
+    MOTINL1 = 1;
+    MOTINL2 = 0;
+    MOTINR1 = 1;
+    MOTINR2 = 0;
+    
+    MOTORL = 0.05 * MOTOR_MAX;
+    MOTORR = 0.05 * MOTOR_MAX;
+}
+
+
+/**
+ * Tests motors and encoders.
+ * 
+ * Mouse should move slowly forward in a corridor. A simple controller ajusts 
+ * the speed of the wheels based on the encoder readings.
+ */
+void testMouseSlowMotionForwardEncoderControl() {
+    if(setup == 1) {
+        setupMotors();
+        setupEncoders();
+        
+        // set motor directions. both forward
+        MOTINL1 = 1;
+        MOTINL2 = 0;
+        MOTINR1 = 1;
+        MOTINR2 = 0;
+        
+        setup = 0;
+    }
+    
+    MOTORL = 0.05 * MOTOR_MAX;
+    MOTORR = 0.05 * MOTOR_MAX;
+    
+    // define error as difference in encoder readings
+    int error = getVelocityInCountsPerSample_1() - getVelocityInCountsPerSample_2();
+    
+    float kp = 1;
+    
+    MOTORL += kp * error;
+    MOTORR -= kp * error;
+}
+
+
+void testMotorBreak() {
+    if(setup == 1) {
+        setupMotors();
+        setupEncoders();
+        setupSensors();
+        setupLED24();
+        
+        // set motor directions. both forward
+        MOTINL1 = 1;
+        MOTINL2 = 0;
+        MOTINR1 = 1;
+        MOTINR2 = 0;
+        
+        setup = 0;
+    }
+    
+    // turn both motors with a slow speed
+    MOTORL = 0.04 * MOTOR_MAX;
+    MOTORR = 0.03 * MOTOR_MAX;
+    
+    int left, right, front;
+    sharpRaw(&left, &front, &right);
+    
+    if(front > 1000) {
+        // verify sensor read
+        LED4 = 1;
+        
+        // define error as difference in encoder readings
+        int error_left = getVelocityInCountsPerSample_1();
+        int error_right = getVelocityInCountsPerSample_2();
+        
+        // break motors fast
+        if(error_left > 0) {
+            MOTINL1 = 0;
+            MOTINL2 = 1;
+        } else {
+            MOTINL1 = 1;
+            MOTINL2 = 0;
+        }
+        
+        if(error_right > 0) {
+            MOTINR1 = 0;
+            MOTINR2 = 1;
+        } else {
+            MOTINR1 = 1;
+            MOTINR2 = 0;
+        }
+        
+        float kp = 1;
+        
+        MOTORL += kp * error_left;
+        MOTORR -= kp * error_right;
+    }
+}
+
+/**
+ * Tests the motors and encoders.
+ * 
+ * The mouse should perform a 180 degrees rotation. This maneuver is only 
+ * performed once
+ */
+void testMouse180DegreesRotation() {
+    if(!perform_only_once) {
+        return;
+    }
+    perform_only_once = 0;
+    
+    if(setup == 1) {
+        setupMotors();
+        setupEncoders();
+        setupLED24();
+        
+        setup = 0;
+    }
+    
+    float encoder_start = getPositionInRad_2();
+    float encoder_current = encoder_start;
+    
+    /**
+     * distance between wheels: 9.5 cm
+     * diameter of wheels: 6 cm
+     * cirfumference of wheels: pi * 6 cm = 18.85 cm
+     * circumference of mouse rotating on the spot: pi * 9.5 cm = 29.85 cm
+     * distance for a 180 degrees rotation: 29.85/2 = 14.92 cm
+     * fraction of one wheel rotation for 180 degrees turn: 14.92/18.85 = 0.79
+     * wheel rotation in rad for a 180 degree turn: 2*pi*0.79 = 4.96
+     */
+    float half_rotation = 4.96;
+    
+    // set motor directions. turn left motor backward, turn right motor forward
+    MOTINL1 = 0;
+    MOTINL2 = 1;
+    MOTINR1 = 1;
+    MOTINR2 = 0;
+    
+    MOTORL = 0.05 * MOTOR_MAX;
+    MOTORR = 0.05 * MOTOR_MAX;
+    
+    while(getPositionInRad_2() - encoder_start < half_rotation){
+        LED4 = 1;
+    }
+    
+    // stop motors
+    MOTINL1 = 0;
+    MOTINL2 = 0;
+    MOTINR1 = 0;
+    MOTINR2 = 0;
+}
+
+
+/**
+ * Tests motors and sensors. Implements a simple controller.
+ * 
+ * Mouse should go forward and keep in the middle of a straight corridor.
+ */
+void testMouseMotionAlongCorridor() {
+    if(setup == 1) {
+        setupMotors();
+        setupSensors();
+        
+        // set motor directions. both forward
+        MOTINL1 = 1;
+        MOTINL2 = 0;
+        MOTINR1 = 1;
+        MOTINR2 = 0;
+        
+        setup = 0;
+    }
+
+    // turn both motors with a slow speed
+    MOTORL = 0.04 * MOTOR_MAX;
+    MOTORR = 0.03 * MOTOR_MAX;
+    
+    int left, right, front;
+    sharpRaw(&left, &front, &right);
+    
+    // define error as signed distance from middle of straight corridor
+    int error = right - left;
+    
+    float kp = 0.1;
+    
+    MOTORL += kp * error;
+    MOTORR -= kp * error;
+}
+
+
+/**
+ * Test motors, encoders, and sensors. 
+ * 
+ * Uses the simple controller from testMouseMotionAlongCorridor(). Additionally, 
+ * the mouse registers the end of the corridor and performs a 180 degrees turn 
+ * before going back the corridor. The switching between states is implemented
+ * by a simple FSM.
+ */
+void testMouseMotionBackAndForthInCorridor() {
+    if(setup == 1) {
+        setupMotors();
+        setupEncoders();
+        setupSensors();
+        
+        mouseState = FORWARD;
+        
+        setup = 0;
+    }
+    
+    int error_left;
+    int error_right;
+    
+    switch(mouseState) {
+        case FORWARD:
+            // set motor directions. both forward
+            MOTINL1 = 1;
+            MOTINL2 = 0;
+            MOTINR1 = 1;
+            MOTINR2 = 0;
+            
+            // turn both motors with a slow speed
+            MOTORL = 0.05 * MOTOR_MAX;
+            MOTORR = 0.05 * MOTOR_MAX;
+
+            int left, right, front;
+            sharpRaw(&left, &front, &right);
+
+            // define error as signed distance from middle of straight corridor
+            int error = right - left;
+
+            float kp_sensor = 0.1;
+
+            MOTORL += kp_sensor * error;
+            MOTORR -= kp_sensor * error;
+            
+            if(front > 2000) {
+                mouseState = BREAK;
+            }
+            
+            break;
+        case BREAK:
+            // define error as remaining velocity in the motors
+            error_left = getVelocityInCountsPerSample_1();
+            error_right = getVelocityInCountsPerSample_2();
+
+            // break motors fast
+            if(error_left > 0) {
+                MOTINL1 = 0;
+                MOTINL2 = 1;
+            } else {
+                MOTINL1 = 1;
+                MOTINL2 = 0;
+            }
+
+            if(error_right > 0) {
+                MOTINR1 = 0;
+                MOTINR2 = 1;
+            } else {
+                MOTINR1 = 1;
+                MOTINR2 = 0;
+            }
+
+            float kp_encoder = 1;
+
+            MOTORL += kp_encoder * error_left;
+            MOTORR -= kp_encoder * error_right;
+            
+            mouseState = ROTATE;
+            
+            break;
+        case ROTATE:
+            testMouse180DegreesRotation();
+            mouseState = FORWARD;
+            break;
+    }
 }

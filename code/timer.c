@@ -80,8 +80,14 @@ void __attribute__((__interrupt__, auto_psv)) _T1Interrupt(void)
     //testSwitch();
     //LED2 = SW1;
     //testLedPWM();
-    testMotorPWM();
+    //testMotorPWM();
     //testEncoders();
     //testSensorsLR();
     //testSensorsF();
+    //testMouseSlowMotionForward();
+    //testMouseSlowMotionForwardEncoderControl();
+    //testMotorBreak();
+    //testMouse180DegreesRotation();
+    //testMouseMotionAlongCorridor();
+    testMouseMotionBackAndForthInCorridor();
 }

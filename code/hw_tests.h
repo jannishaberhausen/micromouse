@@ -10,6 +10,13 @@ extern "C" {
     // (eliminates possibility of destroying stuff we don't even want to test yet)
     extern int setup;
     
+    enum state {
+        FORWARD=0,
+        BREAK=1,
+        ROTATE=2
+    };
+    typedef enum state state;
+    
     void testSwitch();
     void testTimer();
     void testLedPWM();
@@ -17,7 +24,12 @@ extern "C" {
     void testEncoders();
     void testSensorsLR();
     void testSensorsF();
-
+    void testMouseSlowMotionForward();
+    void testMouseSlowMotionForwardEncoderControl();
+    void testMotorBreak();
+    void testMouse180DegreesRotation();
+    void testMouseMotionAlongCorridor();
+    void testMouseMotionBackAndForthInCorridor();
 
 #ifdef	__cplusplus
 }
