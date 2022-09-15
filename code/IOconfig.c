@@ -175,6 +175,7 @@ void setupMotors() {
     // CNPU2bits.CN27PUE = 0;
     
     // Do we have to change TRISBbits.TRISB5 to output ?
+    TRISBbits.TRISB5 = 0;
     
     // reset PWM module
     initPWM();
@@ -186,7 +187,6 @@ void setupMotors() {
     MOTINR2 = 0;
         
     // enable PWM on the motors
-    TRISBbits.TRISB5 = 0;
     PWM1CON1bits.PEN1H = 1;
     PWM1CON1bits.PEN2H = 1;
 }

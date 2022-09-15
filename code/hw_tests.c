@@ -10,16 +10,25 @@
 #include "sharp.h"
 #include "hw_tests.h"
 
+#include "output.h"
+
 #include <math.h>
 #include <stdio.h>
 
 int setup = 1;
 
+int rotating = 0;
+
 int ctr = 0;
 
+<<<<<<< HEAD
 int perform_only_once = 1;
 
 state mouseState;
+=======
+float dc = 0.05;
+
+>>>>>>> 295c5fbbc24fdaceba247710da0528fdeb39717c
 
 /**
  * Tests the switch.
@@ -49,6 +58,7 @@ void testTimer() {
         setup = 0;
     }
     LED2 = !LED2;
+    LED4 = !LED4;
 }
 
 
@@ -70,7 +80,7 @@ void testLedPWM() {
 
     // (2*pi)/50 ~ 0.125663706
     LED4DC = (1-(sin((float)ctr * 0.125663706)+1)*0.5) * PWM_MAX;
-    LED2DC = (1-(cos((float)ctr * 0.125663706)+1)*0.5) * PWM_MAX;
+    LED2DC = (1-(sin((float)ctr * 0.125663706)+1)*0.5) * PWM_MAX;
     
     ctr ++;
 }
@@ -90,8 +100,8 @@ void testMotorPWM() {
         // set motor directions: left fwd, right bwd
         MOTINL1 = 1;
         MOTINL2 = 0;
-        MOTINR1 = 0;
-        MOTINR2 = 1;
+        MOTINR1 = 1;
+        MOTINR2 = 0;
         
         ctr = 0;
         setup = 0;
@@ -101,8 +111,8 @@ void testMotorPWM() {
         ctr = 0;
 
     // (2*pi)/50 ~ 0.125663706
-    MOTORL = ((sin((float)ctr * 0.125663706)+1)*0.5) * MOTOR_MAX;
-    MOTORR = ((cos((float)ctr * 0.125663706)+1)*0.5) * MOTOR_MAX;
+    MOTORL = (1-(sin((float)ctr * 0.125663706)+1)*0.5) * MOTOR_MAX;
+    MOTORR = (1-(sin((float)ctr * 0.125663706)+1)*0.5) * MOTOR_MAX;
     
     ctr ++;
 }
@@ -125,8 +135,179 @@ void testEncoders() {
     float right = getPositionInRad_2();
 
     // 1/(2*pi) = 0.159155
-    LED4DC = (1 - (left * 0.159155))  * PWM_MAX;
-    LED4DC = (1 - (right * 0.159155)) * PWM_MAX;
+    LED2DC = (1 - sin(left * 0.159155))  * PWM_MAX;
+    LED4DC = (1 - sin(right * 0.159155)) * PWM_MAX;
+}
+
+void testMotion_P() {
+    if(setup == 1) {
+        setupMotors();
+        setupEncoders();
+        // set motor directions: left fwd, right fwd
+        MOTINL1 = 1;
+        MOTINL2 = 0;
+        MOTINR1 = 1;
+        MOTINR2 = 0;
+        setup = 0;
+    }
+    
+    MOTORL = dc*MOTOR_MAX;
+    MOTORR = dc*MOTOR_MAX;
+    
+    // controller
+    
+    float left = getVelocityInCountsPerSample_1();
+    float right = getVelocityInCountsPerSample_2();
+    
+    
+    float correction_l = (right-left) * 0.5;
+    float correction_r = (left-right) * 0.5;
+     
+    if(MOTORL + correction_l < MOTOR_MAX)
+        MOTORL += correction_l;
+    
+    if(MOTORR + correction_r < MOTOR_MAX)
+        MOTORR += correction_r;
+}
+
+void testMotion_sharp() {
+    
+    if(setup == 1) {
+        setupMotors();
+        setupSensors();
+        // set motor directions: left fwd, right fwd
+        MOTINL1 = 1;
+        MOTINL2 = 0;
+        MOTINR1 = 1;
+        MOTINR2 = 0;
+        setup = 0;
+    }
+    
+    
+    MOTORL = dc*MOTOR_MAX;
+    MOTORR = dc*MOTOR_MAX;
+    
+    // controller
+    
+    int left, front, right;
+    sharpRaw(&left, &front, &right);
+    
+    float correction_l, correction_r;
+    
+    correction_l = (left - right) * 0.1;
+    correction_r = (right - left) * 0.1;
+     
+    if(MOTORL + correction_l < MOTOR_MAX)
+        MOTORL += correction_l;
+    
+    if(MOTORR + correction_r < MOTOR_MAX)
+        MOTORR += correction_r;
+    
+}
+
+
+void testMotion_rotate() {
+    
+    int origin;
+    
+    if(setup == 1) {
+        setupMotors();
+        setupEncoders();
+        setupLED24();
+        // set motor directions: left bwd, right fwd
+        MOTINL1 = 0;
+        MOTINL2 = 1;
+        MOTINR1 = 1;
+        MOTINR2 = 0;
+        rotating = 1;
+        origin = getPositionInRad_2();
+        setup = 0;
+    }
+    
+    
+    if(rotating == 1) {
+        MOTORL = dc*MOTOR_MAX;
+        MOTORR = dc*MOTOR_MAX;
+        
+        while(getPositionInRad_2() <= origin + 5);
+        
+        rotating = 0;
+    } else {
+        MOTINL1 = 1;
+        MOTINL2 = 1;
+        MOTINR1 = 1;
+        MOTINR2 = 1;
+    }
+    
+}
+
+void testMotion_turn() {
+    
+    if(setup == 1) {
+        setupMotors();
+        setupSensors();
+        setupEncoders();
+        setupLED24();
+        rotating = 0;
+        setup = 0;
+    }
+    
+    
+    float origin;
+    
+    
+    switch(rotating) {
+    case 0:
+
+        // set motor directions: left fwd, right fwd
+        MOTINL1 = 1;
+        MOTINL2 = 0;
+        MOTINR1 = 1;
+        MOTINR2 = 0;
+
+        MOTORL = dc*MOTOR_MAX;
+        MOTORR = dc*MOTOR_MAX;
+
+        // controller
+
+
+        int left, front, right;
+        sharpRaw(&left, &front, &right);
+        
+        float correction_l, correction_r;
+
+        correction_l = (left - right) * 0.1;
+        correction_r = (right - left) * 0.1;
+
+        if(MOTORL + correction_l < MOTOR_MAX)
+            MOTORL += correction_l;
+
+        if(MOTORR + correction_r < MOTOR_MAX)
+            MOTORR += correction_r;
+
+        
+        LED2 = front >= 2000;
+
+        if(front >= 2000) {
+            rotating = 1;
+        }
+        
+        break;
+    case 1:
+        
+        MOTINL1 = 0;
+        MOTINL2 = 1;
+        MOTINR1 = 1;
+        MOTINR2 = 0;
+        
+        MOTORL = 0.2*MOTOR_MAX;
+        MOTORR = 0.2*MOTOR_MAX;
+        
+        while(abs(getPositionInRad_2() - origin) <= 5);
+        
+        rotating = 0;
+    }
+    
 }
 
 
@@ -145,15 +326,20 @@ void testSensorsLR() {
     if(setup == 1) {
         setupLED24_PWM();
         setupSensors();
+        //initOutput();
         setup = 0;
+    
+        //int left, right, front;
+        //sharpRaw(&left, &front, &right);
+        //putBinary(left);
     }
     
+    //refreshBinary();
     int left, right, front;
     sharpRaw(&left, &front, &right);
 
-
-    LED4DC = (1 - ((float) left  / 1023.0)) * PWM_MAX;
-    LED2DC = (1 - ((float) right / 1023.0)) * PWM_MAX;
+    LED4DC = (1 - ((float) left  / SHARP_MAX)) * PWM_MAX;
+    LED2DC = (1 - ((float) right / SHARP_MAX)) * PWM_MAX;
 }
 
 
@@ -178,6 +364,7 @@ void testSensorsF() {
     int left, right, front;
     sharpRaw(&left, &front, &right);
 
+<<<<<<< HEAD
     LED2DC = (1 - ((float) front / 1023.0)) * PWM_MAX;
 }
 
@@ -469,4 +656,7 @@ void testMouseMotionBackAndForthInCorridor() {
             mouseState = FORWARD;
             break;
     }
+=======
+    LED2DC = (1 - ((float) front / SHARP_MAX)) * PWM_MAX;
+>>>>>>> 295c5fbbc24fdaceba247710da0528fdeb39717c
 }
