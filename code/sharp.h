@@ -1,6 +1,8 @@
 #ifndef SHARP_H
 #define	SHARP_H
 
+#define SHARP_MAX 4095
+
 #ifdef	__cplusplus
 extern "C" {
 #endif

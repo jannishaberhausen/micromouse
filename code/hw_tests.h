@@ -24,20 +24,16 @@ extern "C" {
     void testEncoders();
     void testSensorsLR();
     void testSensorsF();
-<<<<<<< HEAD
+    void testMotion_P();
+    void testMotion_sharp();
+    void testMotion_rotate();
+    void testMotion_turn();
     void testMouseSlowMotionForward();
     void testMouseSlowMotionForwardEncoderControl();
     void testMotorBreak();
     void testMouse180DegreesRotation();
     void testMouseMotionAlongCorridor();
     void testMouseMotionBackAndForthInCorridor();
-=======
-    void testMotion_P();
-    void testMotion_sharp();
-    void testMotion_rotate();
-    void testMotion_turn();
-
->>>>>>> 295c5fbbc24fdaceba247710da0528fdeb39717c
 
 #ifdef	__cplusplus
 }

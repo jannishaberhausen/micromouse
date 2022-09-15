@@ -14,21 +14,19 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 int setup = 1;
 
-int rotating = 0;
-
 int ctr = 0;
 
-<<<<<<< HEAD
 int perform_only_once = 1;
 
 state mouseState;
-=======
+
+// dutycycle to make motors turn slowly
 float dc = 0.05;
 
->>>>>>> 295c5fbbc24fdaceba247710da0528fdeb39717c
 
 /**
  * Tests the switch.
@@ -219,19 +217,19 @@ void testMotion_rotate() {
         MOTINL2 = 1;
         MOTINR1 = 1;
         MOTINR2 = 0;
-        rotating = 1;
+        mouseState = ROTATE;
         origin = getPositionInRad_2();
         setup = 0;
     }
     
     
-    if(rotating == 1) {
+    if(mouseState == ROTATE) {
         MOTORL = dc*MOTOR_MAX;
         MOTORR = dc*MOTOR_MAX;
         
         while(getPositionInRad_2() <= origin + 5);
         
-        rotating = 0;
+        mouseState = FORWARD;
     } else {
         MOTINL1 = 1;
         MOTINL2 = 1;
@@ -248,7 +246,7 @@ void testMotion_turn() {
         setupSensors();
         setupEncoders();
         setupLED24();
-        rotating = 0;
+        mouseState = FORWARD;
         setup = 0;
     }
     
@@ -256,8 +254,8 @@ void testMotion_turn() {
     float origin;
     
     
-    switch(rotating) {
-    case 0:
+    switch(mouseState) {
+    case FORWARD:
 
         // set motor directions: left fwd, right fwd
         MOTINL1 = 1;
@@ -289,11 +287,13 @@ void testMotion_turn() {
         LED2 = front >= 2000;
 
         if(front >= 2000) {
-            rotating = 1;
+            mouseState = ROTATE;
         }
         
         break;
     case 1:
+        
+        origin = getPositionInRad_2();
         
         MOTINL1 = 0;
         MOTINL2 = 1;
@@ -305,7 +305,10 @@ void testMotion_turn() {
         
         while(abs(getPositionInRad_2() - origin) <= 5);
         
-        rotating = 0;
+        mouseState = FORWARD;
+        break;
+    default:
+        break;
     }
     
 }
@@ -364,7 +367,6 @@ void testSensorsF() {
     int left, right, front;
     sharpRaw(&left, &front, &right);
 
-<<<<<<< HEAD
     LED2DC = (1 - ((float) front / 1023.0)) * PWM_MAX;
 }
 
@@ -656,7 +658,4 @@ void testMouseMotionBackAndForthInCorridor() {
             mouseState = FORWARD;
             break;
     }
-=======
-    LED2DC = (1 - ((float) front / SHARP_MAX)) * PWM_MAX;
->>>>>>> 295c5fbbc24fdaceba247710da0528fdeb39717c
 }
