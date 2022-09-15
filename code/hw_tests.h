@@ -17,6 +17,10 @@ extern "C" {
     void testEncoders();
     void testSensorsLR();
     void testSensorsF();
+    void testMotion_P();
+    void testMotion_sharp();
+    void testMotion_rotate();
+    void testMotion_turn();
 
 
 #ifdef	__cplusplus
