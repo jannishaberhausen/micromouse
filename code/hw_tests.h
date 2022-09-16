@@ -13,7 +13,9 @@ extern "C" {
     enum state {
         FORWARD=0,
         BREAK=1,
-        ROTATE=2
+        ROTATE=2,
+        RIGHT_TURN=3,
+        LEFT_TURN=4
     };
     typedef enum state state;
     
@@ -34,6 +36,13 @@ extern "C" {
     void testMouse180DegreesRotation();
     void testMouseMotionAlongCorridor();
     void testMouseMotionBackAndForthInCorridor();
+    void testMouseStopBeforeWall();
+    void testMouseOnlyRelyOnOneSensor();
+    void testMouseAlwaysFollowRightWall();
+    
+    
+    void testRightTurn(int degrees);
+    void motorBreak();
 
 #ifdef	__cplusplus
 }

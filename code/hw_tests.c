@@ -10,8 +10,6 @@
 #include "sharp.h"
 #include "hw_tests.h"
 
-#include "output.h"
-
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,6 +21,13 @@ int ctr = 0;
 int perform_only_once = 1;
 
 state mouseState;
+float base_motor_speed_left = 0.04;
+float base_motor_speed_right = 0.04;
+
+int error_previous = 0;
+
+int desired_distance_to_front_wall = 1000;
+int distance_to_front_wall_threshold = 100;
 
 // dutycycle to make motors turn slowly
 float dc = 0.05;
@@ -389,8 +394,8 @@ void testMouseSlowMotionForward() {
     MOTINR1 = 1;
     MOTINR2 = 0;
     
-    MOTORL = 0.05 * MOTOR_MAX;
-    MOTORR = 0.05 * MOTOR_MAX;
+    MOTORL = base_motor_speed_left * MOTOR_MAX;
+    MOTORR = base_motor_speed_right * MOTOR_MAX;
 }
 
 
@@ -503,7 +508,6 @@ void testMouse180DegreesRotation() {
     }
     
     float encoder_start = getPositionInRad_2();
-    float encoder_current = encoder_start;
     
     /**
      * distance between wheels: 9.5 cm
@@ -592,8 +596,8 @@ void testMouseMotionBackAndForthInCorridor() {
         setup = 0;
     }
     
-    int error_left;
-    int error_right;
+    int error_left_breaking;
+    int error_right_breaking;
     
     switch(mouseState) {
         case FORWARD:
@@ -603,20 +607,26 @@ void testMouseMotionBackAndForthInCorridor() {
             MOTINR1 = 1;
             MOTINR2 = 0;
             
+            // factors for controller
+            float kp_sensor = 0.1;
+            float ki_sensor = 0.01;
+            
             // turn both motors with a slow speed
-            MOTORL = 0.05 * MOTOR_MAX;
-            MOTORR = 0.05 * MOTOR_MAX;
+            MOTORL = base_motor_speed_left * MOTOR_MAX;
+            MOTORR = base_motor_speed_right * MOTOR_MAX;
 
             int left, right, front;
             sharpRaw(&left, &front, &right);
 
             // define error as signed distance from middle of straight corridor
             int error = right - left;
+            
+            float update = kp_sensor * error + ki_sensor * (error+error_previous);
 
-            float kp_sensor = 0.1;
-
-            MOTORL += kp_sensor * error;
-            MOTORR -= kp_sensor * error;
+            MOTORL += update;
+            MOTORR -= update;
+            
+            error_previous = error;
             
             if(front > 2000) {
                 mouseState = BREAK;
@@ -625,11 +635,11 @@ void testMouseMotionBackAndForthInCorridor() {
             break;
         case BREAK:
             // define error as remaining velocity in the motors
-            error_left = getVelocityInCountsPerSample_1();
-            error_right = getVelocityInCountsPerSample_2();
+            error_left_breaking = getVelocityInCountsPerSample_1();
+            error_right_breaking = getVelocityInCountsPerSample_2();
 
             // break motors fast
-            if(error_left > 0) {
+            if(error_left_breaking > 0) {
                 MOTINL1 = 0;
                 MOTINL2 = 1;
             } else {
@@ -637,7 +647,7 @@ void testMouseMotionBackAndForthInCorridor() {
                 MOTINL2 = 0;
             }
 
-            if(error_right > 0) {
+            if(error_right_breaking > 0) {
                 MOTINR1 = 0;
                 MOTINR2 = 1;
             } else {
@@ -647,8 +657,8 @@ void testMouseMotionBackAndForthInCorridor() {
 
             float kp_encoder = 1;
 
-            MOTORL += kp_encoder * error_left;
-            MOTORR -= kp_encoder * error_right;
+            MOTORL += kp_encoder * error_left_breaking;
+            MOTORR -= kp_encoder * error_right_breaking;
             
             mouseState = ROTATE;
             
@@ -657,5 +667,321 @@ void testMouseMotionBackAndForthInCorridor() {
             testMouse180DegreesRotation();
             mouseState = FORWARD;
             break;
+    }
+}
+
+
+/**
+ * Tests the motors and the sensors.
+ * 
+ * The mouse should follow a straight corridor until it reaches the end of the 
+ * corridor. The mouse should stop exactly in the middle of the cell.
+ */
+void testMouseStopBeforeWall() {
+    if(setup == 1) {
+        setupMotors();
+        setupEncoders();
+        setupSensors();
+        
+        mouseState = FORWARD;
+        
+        setup = 0;
+    }
+    
+    int left, right, front;
+    sharpRaw(&left, &front, &right);
+    
+    switch(mouseState) {
+        case FORWARD:
+            // set motor directions. both forward
+            MOTINL1 = 1;
+            MOTINL2 = 0;
+            MOTINR1 = 1;
+            MOTINR2 = 0;
+            
+            // factors for controller
+            float kp_sensor = 0.1;
+            float ki_sensor = 0.01;
+            
+            // turn both motors with a slow speed
+            MOTORL = base_motor_speed_left * MOTOR_MAX;
+            MOTORR = base_motor_speed_right * MOTOR_MAX;
+
+            // define error as signed distance from middle of straight corridor
+            int error = right - left;
+            
+            float update = kp_sensor * error + ki_sensor * (error+error_previous);
+
+            MOTORL += update;
+            MOTORR -= update;
+            
+            error_previous = error;
+            
+            if(front > desired_distance_to_front_wall) {
+                mouseState = BREAK;
+            }
+            
+            break;
+        case BREAK:
+            if(abs(front - desired_distance_to_front_wall) <= distance_to_front_wall_threshold) {
+                // stop motors
+                MOTORL = 0;
+                MOTORR = 0;
+            }
+            
+            // define error as distance from desired wall distance
+            error = front - desired_distance_to_front_wall;
+
+            // break motors fast
+            if(error > 0) {
+                MOTINL1 = 0;
+                MOTINL2 = 1;
+                MOTINR1 = 0;
+                MOTINR2 = 1;
+            } else {
+                MOTINL1 = 1;
+                MOTINL2 = 0;
+                MOTINR1 = 1;
+                MOTINR2 = 0;
+            }
+            
+            // turn both motors with a slow speed
+            MOTORL = base_motor_speed_left * MOTOR_MAX;
+            MOTORR = base_motor_speed_right * MOTOR_MAX;
+
+            break;
+    }
+}
+
+
+/**
+ * Tests the motors and sensors.
+ * 
+ * The mouse should move along a straight corridor only relying on one sensor. 
+ * This behavior is necessary at corners. Here it can be tested in a longer 
+ * corridor.
+ */
+void testMouseOnlyRelyOnOneSensor() {
+    if(setup == 1) {
+        setupMotors();
+        setupSensors();
+        
+        // set motor directions. both forward
+        MOTINL1 = 1;
+        MOTINL2 = 0;
+        MOTINR1 = 1;
+        MOTINR2 = 0;
+        
+        setup = 0;
+    }
+    // int only_right = 1;
+    int error;
+    
+    // variables for controller
+    float kp_sensor = 0.3;
+    // float ki_sensor = 0.01;
+    
+    int left, right, front;
+    sharpRaw(&left, &front, &right);
+    
+    /*
+    if(only_right) { // true: only rely on right sensor. false: only on left
+        error = right - 1000;
+    } else {
+        error = left - 1000;
+    }
+    */
+    
+    error = right - 1000;
+
+    float update = kp_sensor * error;  //+ ki_sensor * (error+error_previous);
+
+    MOTORL = base_motor_speed_left * MOTOR_MAX + update;
+    MOTORR = base_motor_speed_right * MOTOR_MAX - update;
+    
+    // just for debugging
+    if(front > 2000) {
+        MOTORL = 0;
+        MOTORR = 0;
+    }
+}
+
+
+void testMouseAlwaysFollowRightWall() {
+    if(setup == 1) {
+        setupMotors();
+        setupEncoders();
+        setupSensors();
+        
+        mouseState = FORWARD;
+        
+        setup = 0;
+    }
+    
+    int left, right, front;
+    sharpRaw(&left, &front, &right);
+    
+    float encoder_start;
+    float rotation;
+    
+    switch(mouseState) {
+        case FORWARD:
+            // set motor directions. both forward
+            MOTINL1 = 1;
+            MOTINL2 = 0;
+            MOTINR1 = 1;
+            MOTINR2 = 0;
+
+            // variables for controller
+            float kp_sensor = 0.3;
+            
+            int error = right - 1000;
+
+            float update = kp_sensor * error;
+
+            MOTORL = base_motor_speed_left * MOTOR_MAX + update;
+            MOTORR = base_motor_speed_right * MOTOR_MAX - update;
+            
+            if(front > desired_distance_to_front_wall) {
+                mouseState = BREAK;
+            }
+            
+            break;
+            
+        case BREAK:
+            /*
+            if(abs(front - desired_distance_to_front_wall) <= distance_to_front_wall_threshold) {
+                // stop motors
+                MOTORL = 0;
+                MOTORR = 0;
+                
+                mouseState = RIGHT_TURN;
+            }
+            
+            // define error as distance from desired wall distance
+            error = front - desired_distance_to_front_wall;
+
+            if(error > 0) {
+                MOTINL1 = 0;
+                MOTINL2 = 1;
+                MOTINR1 = 0;
+                MOTINR2 = 1;
+            } else {
+                MOTINL1 = 1;
+                MOTINL2 = 0;
+                MOTINR1 = 1;
+                MOTINR2 = 0;
+            }
+            
+            // turn both motors with a slow speed
+            MOTORL = base_motor_speed_left * MOTOR_MAX;
+            MOTORR = base_motor_speed_right * MOTOR_MAX;
+            */
+            
+            MOTORL = 0;
+            MOTORR = 0;
+            
+            mouseState = RIGHT_TURN;
+
+            break;
+            
+        case RIGHT_TURN:
+            encoder_start = getPositionInRad_2();
+    
+            // calculate rad from degrees: degrees * 0.02755 = rad
+            rotation = 90.0 * 0.02755;
+
+            // set motor directions. turn left motor forward, turn right motor backward
+            MOTINL1 = 1;
+            MOTINL2 = 0;
+            MOTINR1 = 0;
+            MOTINR2 = 1;
+
+            MOTORL = base_motor_speed_left * MOTOR_MAX;
+            MOTORR = base_motor_speed_right * MOTOR_MAX;
+
+            while(getPositionInRad_2() + encoder_start > rotation);
+
+            MOTORL = 0;
+            MOTORR = 0;
+            
+            mouseState = FORWARD;
+            
+            break;
+    }
+}
+
+
+// actually a left turn at the moment
+void testRightTurn(int degrees) {
+    if(!perform_only_once) {
+        return;
+    }
+    perform_only_once = 0;
+    
+    if(setup == 1) {
+        setupMotors();
+        setupEncoders();
+        
+        setup = 0;
+    }
+    
+    float encoder_start = getPositionInRad_2();
+    
+    // calculate rad from degrees: degrees * 0.02755 = rad
+    float rotation = (float) degrees * 0.02755;
+   
+    // set motor directions. turn left motor forward, turn right motor backward
+    MOTINL1 = 0;
+    MOTINL2 = 1;
+    MOTINR1 = 1;
+    MOTINR2 = 0;
+    
+    MOTORL = base_motor_speed_left * MOTOR_MAX;
+    MOTORR = base_motor_speed_right * MOTOR_MAX;
+    
+    while(getPositionInRad_2() - encoder_start < rotation);
+    
+    MOTORL = 0;
+    MOTORR = 0;
+    
+    //motorBreak();
+}
+
+
+/* ############################################################################
+ * ################## MOVE TO UTILS FILE ######################################
+ * ############################################################################
+ */
+
+void motorBreak() {
+    while(getVelocityInCountsPerSample_1() > 1000 || getVelocityInCountsPerSample_2() > 1000) {
+        // define error as remaining velocity in the motors
+        int error_left_breaking;
+        int error_right_breaking;
+
+        error_left_breaking = getVelocityInCountsPerSample_1();
+        error_right_breaking = getVelocityInCountsPerSample_2();
+
+        // set motor directions for breaking
+        if(error_left_breaking > 0) {
+            MOTINL1 = 0;
+            MOTINL2 = 1;
+        } else {
+            MOTINL1 = 1;
+            MOTINL2 = 0;
+        }
+        if(error_right_breaking > 0) {
+            MOTINR1 = 0;
+            MOTINR2 = 1;
+        } else {
+            MOTINR1 = 1;
+            MOTINR2 = 0;
+        }
+
+        float kp_encoder = 1;
+
+        MOTORL = base_motor_speed_left * MOTOR_MAX - kp_encoder * error_left_breaking;
+        MOTORR = base_motor_speed_left * MOTOR_MAX - kp_encoder * error_right_breaking;
     }
 }
