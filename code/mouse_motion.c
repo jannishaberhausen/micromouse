@@ -35,7 +35,7 @@
  * to drive in cm or the number of cells. If both inputs are null then the mouse
  * drives forward until it reaches a junction or a dead end and changes state.
  * 
- * @param 
+ * @params 
  *      distance_in_cm (int): optional, distance to drive forward in cm
  *      number_of_cells (int): optional, number of cells to drive forward
  */
@@ -75,7 +75,19 @@ void driveForward(int distance_in_cm, short number_of_cells) {
  *      degrees (int): size of turning angle 
  */
 void driveRightTurn(int degrees) {
-    
+    float encoder_start = getPositionInRad_2();
+
+    // calculate rad from degrees: degrees * 0.02755 = rad
+    float rotation_in_rad = (float) degress * 0.02755;
+
+    setMotorDirections_RightTurn();
+
+    MOTORL = vbl * MOTOR_MAX;
+    MOTORR = vbr * MOTOR_MAX;
+
+    while (getPositionInRad_2() - encoder_start < rotation_in_rad);
+
+    brake();
 }
 
 
@@ -92,10 +104,38 @@ void driveLeftTurn(int degrees) {
 
 /**
  * Slows the mouse down quickly by turning the motors backward. This results in 
- * a faster stop as compared to letting the wheels spin freely.
+ * a faster stop as compared to letting the wheels spin freely. Exit the 
+ * function when the remaining wheel speed is below a threshold
  */
 void brake() {
+    // define errors as remaining velocity in the wheels
+    int error_left = getVelocityInCountsPerSample_1();
+    int error_right = getVelocityInCountsPerSample_2();
     
+    // TODO: have not verified thresholds!!!
+    if(error_left < 100 && error_right < 100) {
+        return;
+    }
+
+    // set motor directions according to the errors
+    if (error_left > 0) {
+        setMotorDirectionLeft_Backward();
+    } else {
+        setMotorDirectionLeft_Forward();
+    }
+
+    if (error_right > 0) {
+        setMotorDirectionRight_Backward();
+    } else {
+        setMotorDirectionRight_Forward();
+    }
+
+    // factor for P control
+    float kp = 1;
+
+    // update motor speeds based on error readings
+    MOTORL += kp * error_left;
+    MOTORR -= kp * error_right;
 }
 
 
@@ -113,7 +153,11 @@ void brake() {
  *      1 = there is a wall ahead, 0 = there is no wall ahead
  */
 int checkForWallAhead(int front) {
-    
+    if(front > 1000){
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 
@@ -164,10 +208,8 @@ int checkForGoal() {
  * Sets the direction of the motors to both go forward.
  */
 void setMotorDirections_Forward() {
-    MOTINL1 = 1;
-    MOTINL2 = 0;
-    MOTINR1 = 1;
-    MOTINR2 = 0;
+    setMotorDirectionLeft_Forward();
+    setMotorDirectionRight_Forward();
 }
 
 
@@ -176,10 +218,8 @@ void setMotorDirections_Forward() {
  * Left wheel goes forward. Right wheel goes backward.
  */
 void setMotorDirections_RightTurn() {
-    MOTINL1 = 1;
-    MOTINL2 = 0;
-    MOTINR1 = 0;
-    MOTINR2 = 1;
+    setMotorDirectionLeft_Forward();
+    setMotorDirectionRight_Backward();
 }
 
 /**
@@ -187,18 +227,46 @@ void setMotorDirections_RightTurn() {
  * Left wheel goes backward. Right wheel goes forward.
  */
 void setMotorDirections_LeftTurn() {
-    MOTINL1 = 0;
-    MOTINL2 = 1;
-    MOTINR1 = 1;
-    MOTINR2 = 0;
+    setMotorDirectionLeft_Backward();
+    setMotorDirectionRight_Forward();
 }
 
 /**
  * Sets the direction of the motors to both go backward.
  */
 void setMotorDirections_Backward() {
+    setMotorDirectionLeft_Backward();
+    setMotorDirectionRight_Backward();
+}
+
+/**
+ * Sets the direction of the left motor to go forward.
+ */
+void setMotorDirectionLeft_Forward() {
+    MOTINL1 = 1;
+    MOTINL2 = 0;
+}
+
+/**
+ * Sets the direction of the left motor to go backward.
+ */
+void setMotorDirectionLeft_Backward() {
     MOTINL1 = 0;
     MOTINL2 = 1;
+}
+
+/**
+ * Sets the direction of the right motor to go forward.
+ */
+void setMotorDirectionRight_Forward() {
+    MOTINR1 = 1;
+    MOTINR2 = 0;
+}
+
+/**
+ * Sets the direction of the right motor to go backward.
+ */
+void setMotorDirectionRight_Backward() {
     MOTINR1 = 0;
     MOTINR2 = 1;
 }

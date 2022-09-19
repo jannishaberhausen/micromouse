@@ -20,8 +20,8 @@ extern "C" {
     void testSlowMotionForwardEncoderControl();
     
     
-    void testMotorBreak();
-    void testMouse180DegreesRotation();
+    void testBrakeInStraightCorridor();
+    void testRotation();
     void testStraightCorridor();
     void testMouseMotionBackAndForthInCorridor();
     void testMouseStopBeforeWall();

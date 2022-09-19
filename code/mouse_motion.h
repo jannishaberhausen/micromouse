@@ -26,6 +26,10 @@ extern "C" {
     void setMotorDirections_RightTurn();
     void setMotorDirections_LeftTurn();
     void setMotorDirections_Backward();
+    void setMotorDirectionLeft_Forward();
+    void setMotorDirectionLeft_Backward();
+    void setMotorDirectionRight_Forward();
+    void setMotorDirectionRight_Backward();
     int distanceFromEncoderReadings();
 
 #ifdef	__cplusplus
