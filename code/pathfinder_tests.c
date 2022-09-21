@@ -1,10 +1,20 @@
 #include "pathfinder.h"
+#include "hw_tests.h"
+#include "pathfinder_tests.h"
 #include <stdio.h>
 
-cell env[4][4];
+cell env[SIZE][SIZE];
 int x;
 int y;
 orientation dir;
+
+plannerState current_state_planner;
+
+
+// part of motors.h in the real environment
+
+// simulates the time required to execute a motion
+int debug_delay = 100;
 
 /**
  * Print the maze in its internal representation.
@@ -213,12 +223,33 @@ void DEBUG_get_walls(int *left, int *front, int *right) {
     *right = env[x][y].walls[(dir+1)%4];
 }
 
-int test_main() {
+/**
+ * Mock for querying whether the desired motion was completed by the MC.
+ * 
+ * To be implemented using an additional mouse state.
+ * 
+ * @return 1 if completed, 0 otherwise
+ */
+int DEBUG_get_completed() {
+    debug_delay --;
+    if(debug_delay == 0) {
+        debug_delay = 100;
+        return 1;
+    }
+    return 0;
+}
 
-    x = 0;
-    y = 0;
-    dir = EAST;
-    direction move;
+/**
+ * Mock for setting the state of the MC.
+ * 
+ * To be implemented by setting the mouseState.
+ */
+void DEBUG_set_state(direction newState) {
+    debug_delay = 100;
+    mouseState = newState;
+}
+
+void DEBUG_setup_maze() {
 
     /*
      * Example maze:
@@ -316,6 +347,17 @@ int test_main() {
     env[3][3].walls[2] = WALL;
     env[3][3].walls[3] = WAY;
 
+}
+
+int test_main() {
+
+    DEBUG_setup_maze();
+
+    x = 0;
+    y = 0;
+    dir = EAST;
+    direction move;
+
 
     initMaze(x, y, dir);
     prettyPrintMaze(env);
@@ -360,5 +402,111 @@ int test_main() {
         }
     }
 
+    return 0;
+}
+
+
+/**
+ * Concept of the DFA for the motion plnner.
+ */
+int testAutomaton_main() {
+
+    // setup test environment
+    DEBUG_setup_maze();
+    
+    ////////////////////////////////////////////////////////////
+    //              1. Wait for Explore Phase                 //
+    ////////////////////////////////////////////////////////////
+    
+    // busy wait until started from switch ISR
+    //TODO: change state from switch ISR
+    //while(current_state_planner == WAIT_EXPLORE);
+    
+    ////////////////////////////////////////////////////////////
+    //                  2. Explore Phase                      //
+    ////////////////////////////////////////////////////////////
+    
+    direction move = STOP;
+    x = 0;
+    y = 0;
+    dir = NORTH;
+
+    initMaze(x, y, dir);
+    
+    // loop until explore phase completed
+    do {
+
+        // plan next step. Includes collecting sensor information
+        move = explore(x, y, dir);
+        
+        
+        // execute the movement
+        /// 1. turn if necessary
+        if(move != FRONT) {
+            DEBUG_set_state(move);
+            // wait for completion
+            while (DEBUG_get_completed() == 0);
+        }
+        /// 2. move forward
+        DEBUG_set_state(FRONT);
+        // wait for completion
+        while (DEBUG_get_completed() == 0);
+        
+        
+        // update internal state representation
+        dir = (dir+move)%4;
+
+        if(move != STOP) {
+            switch (dir) {
+                case NORTH:
+                    y++;
+                    break;
+                case EAST:
+                    x++;
+                    break;
+                case SOUTH:
+                    y--;
+                    break;
+                case WEST:
+                    x--;
+                    break;
+                default:
+                    break;
+            }
+        }
+    } while(move != STOP);
+    
+    //TODO: turn back to start orientation
+    
+    
+    ////////////////////////////////////////////////////////////
+    //              3. Wait for Exploit Phase                 //
+    ////////////////////////////////////////////////////////////
+    
+    current_state_planner = WAIT_EXPLOIT;
+    
+    // busy wait until started from switch ISR
+    //TODO: change state from switch ISR
+    //while(current_state_planner == WAIT_EXPLOIT);
+    
+    
+    ////////////////////////////////////////////////////////////
+    //                  4. Exploit Phase                      //
+    ////////////////////////////////////////////////////////////
+    
+    // plan path
+    direction *path = exploit(x, y, EAST, 2, 0);
+
+    // replay path
+    for(int i = 0; path[i] != STOP; i++) {
+        DEBUG_set_state(path[i]);
+        // wait for completion
+        while (DEBUG_get_completed() == 0);
+        printf("%d", path[i]);
+
+    }
+
+    // COMPLETE!
+    
     return 0;
 }

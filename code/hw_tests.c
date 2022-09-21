@@ -9,6 +9,7 @@
 #include "adc.h"
 #include "sharp.h"
 #include "hw_tests.h"
+#include "pathfinder.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -20,6 +21,31 @@ int ctr = 0;
 
 // dutycycle to make motors turn slowly
 float dc = 0.05;
+
+// desired velocity
+float v_dest_left;
+float v_dest_right;
+
+// accumulated error for I part
+float acc_error_left;
+float acc_error_right;
+
+// correction during control
+float correction_left;
+float correction_right;
+
+// error in the previous control iteration, for D part
+int last_error_left;
+int last_error_right;
+
+// control parameters
+float k_p = 2;
+float k_i = 0.001;
+float k_d = 80;
+
+direction mouseState;
+
+int delay;
 
 
 
@@ -132,185 +158,6 @@ void testEncoders() {
     LED4DC = (1 - sin(right * 0.159155)) * PWM_MAX;
 }
 
-/*
-
-void testMotion_P() {
-    if(setup == 1) {
-        setupMotors();
-        setupEncoders();
-        // set motor directions: left fwd, right fwd
-        MOTINL1 = 1;
-        MOTINL2 = 0;
-        MOTINR1 = 1;
-        MOTINR2 = 0;
-        setup = 0;
-    }
-    
-    MOTORL = dc*MOTOR_MAX;
-    MOTORR = dc*MOTOR_MAX;
-    
-    // controller
-    
-    float left = getVelocityInCountsPerSample_1();
-    float right = getVelocityInCountsPerSample_2();
-    
-    
-    float correction_l = (right-left) * 0.5;
-    float correction_r = (left-right) * 0.5;
-     
-    if(MOTORL + correction_l < MOTOR_MAX)
-        MOTORL += correction_l;
-    
-    if(MOTORR + correction_r < MOTOR_MAX)
-        MOTORR += correction_r;
-}
-
-void testMotion_sharp() {
-    
-    if(setup == 1) {
-        setupMotors();
-        setupSensors();
-        // set motor directions: left fwd, right fwd
-        MOTINL1 = 1;
-        MOTINL2 = 0;
-        MOTINR1 = 1;
-        MOTINR2 = 0;
-        setup = 0;
-    }
-    
-    
-    MOTORL = dc*MOTOR_MAX;
-    MOTORR = dc*MOTOR_MAX;
-    
-    // controller
-    
-    int left, front, right;
-    sharpRaw(&left, &front, &right);
-    
-    float correction_l, correction_r;
-    
-    correction_l = (left - right) * 0.1;
-    correction_r = (right - left) * 0.1;
-     
-    if(MOTORL + correction_l < MOTOR_MAX)
-        MOTORL += correction_l;
-    
-    if(MOTORR + correction_r < MOTOR_MAX)
-        MOTORR += correction_r;
-    
-}
-
-
-void testMotion_rotate() {
-    
-    int origin;
-    
-    if(setup == 1) {
-        setupMotors();
-        setupEncoders();
-        setupLED24();
-        // set motor directions: left bwd, right fwd
-        MOTINL1 = 0;
-        MOTINL2 = 1;
-        MOTINR1 = 1;
-        MOTINR2 = 0;
-        mouseState = ROTATE;
-        origin = getPositionInRad_2();
-        setup = 0;
-    }
-    
-    
-    if(mouseState == ROTATE) {
-        MOTORL = dc*MOTOR_MAX;
-        MOTORR = dc*MOTOR_MAX;
-        
-        while(getPositionInRad_2() <= origin + 5);
-        
-        mouseState = FORWARD;
-    } else {
-        MOTINL1 = 1;
-        MOTINL2 = 1;
-        MOTINR1 = 1;
-        MOTINR2 = 1;
-    }
-    
-}
-
-void testMotion_turn() {
-    
-    if(setup == 1) {
-        setupMotors();
-        setupSensors();
-        setupEncoders();
-        setupLED24();
-        mouseState = FORWARD;
-        setup = 0;
-    }
-    
-    
-    float origin;
-    
-    
-    switch(mouseState) {
-    case FORWARD:
-
-        // set motor directions: left fwd, right fwd
-        MOTINL1 = 1;
-        MOTINL2 = 0;
-        MOTINR1 = 1;
-        MOTINR2 = 0;
-
-        MOTORL = dc*MOTOR_MAX;
-        MOTORR = dc*MOTOR_MAX;
-
-        // controller
-
-
-        int left, front, right;
-        sharpRaw(&left, &front, &right);
-        
-        float correction_l, correction_r;
-
-        correction_l = (left - right) * 0.1;
-        correction_r = (right - left) * 0.1;
-
-        if(MOTORL + correction_l < MOTOR_MAX)
-            MOTORL += correction_l;
-
-        if(MOTORR + correction_r < MOTOR_MAX)
-            MOTORR += correction_r;
-
-        
-        LED2 = front >= 2000;
-
-        if(front >= 2000) {
-            mouseState = ROTATE;
-        }
-        
-        break;
-    case 1:
-        
-        origin = getPositionInRad_2();
-        
-        MOTINL1 = 0;
-        MOTINL2 = 1;
-        MOTINR1 = 1;
-        MOTINR2 = 0;
-        
-        MOTORL = 0.2*MOTOR_MAX;
-        MOTORR = 0.2*MOTOR_MAX;
-        
-        while(abs(getPositionInRad_2() - origin) <= 5);
-        
-        mouseState = FORWARD;
-        break;
-    default:
-        break;
-    }   
-}
-
-*/
-
 
 /**
  * Tests the sharp distance sensors.
@@ -368,3 +215,428 @@ void testSensorsF() {
     LED2DC = (1 - ((float) front / 1023.0)) * PWM_MAX;
 }
 
+
+/**
+ * Tests slowly driving forward using a P controller.
+ * 
+ * Controls only the difference between the two motors, 
+ * not the actual speed.
+ * 
+ * Works, but not great, made obsolete by testMotion_PID().
+ */
+void testMotion_P() {
+    
+    // desired velocity in ticks per sample,
+    // 2112 ticks/rotation at 0.5 rotations/second
+    // and 100 samples/second => 10.56 ticks per sample
+    int v = 10;
+    
+    if(setup == 1) {
+        setupMotors();
+        setupEncoders();
+        // set motor directions: left fwd, right fwd
+        MOTINL1 = 1;
+        MOTINL2 = 0;
+        MOTINR1 = 1;
+        MOTINR2 = 0;
+
+        MOTORL = dc*MOTOR_MAX;
+        MOTORR = dc*MOTOR_MAX;
+        
+        correction_left = 0;
+        correction_right = 0;
+        
+        setup = 0;
+    }
+    
+    // controller
+    
+    float left = getVelocityInCountsPerSample_1();
+    float right = getVelocityInCountsPerSample_2();
+    
+    
+    correction_left = (v-left) * k_p;
+    correction_right = (v-right) * k_p;
+     
+    if(MOTORL + correction_left < MOTOR_MAX)
+        MOTORL += correction_left;
+    
+    if(MOTORR + correction_right < MOTOR_MAX)
+        MOTORR += correction_right;
+}
+
+
+/**
+ * Tests slowly driving forward using a PID controller.
+ * 
+ * Keeps the velocity of both motors independently
+ * to half a rotation per second.
+ */
+void testMotion_PID() {
+    
+    // desired velocity in ticks per sample,
+    // 2112 ticks/rotation at 0.5 rotations/second
+    // and 100 samples/second => 10.56 ticks per sample
+    int v = 10;
+    
+    if(setup == 1) {
+        setupMotors();
+        setupEncoders();
+        // set motor directions: left fwd, right fwd
+        MOTINL1 = 1;
+        MOTINL2 = 0;
+        MOTINR1 = 1;
+        MOTINR2 = 0;
+
+        MOTORL = dc*MOTOR_MAX;
+        MOTORR = dc*MOTOR_MAX;
+        
+        correction_left = 0;
+        correction_right = 0;
+        last_error_left = 0;
+        last_error_right = 0;
+        
+        acc_error_left = 0;
+        acc_error_right = 0;
+        
+        setup = 0;
+    }
+    
+    // controller
+    
+    float left = getVelocityInCountsPerSample_1();
+    float right = getVelocityInCountsPerSample_2();
+    
+    // P-part
+    float error_l = v-left;
+    float error_r = v-right;
+    
+    // I-part
+    acc_error_left += error_l;
+    acc_error_right += error_r;
+    
+    // D-part
+    float d_error_l = error_l - last_error_left;
+    float d_error_r = error_r - last_error_right;
+    
+    last_error_left = error_l;
+    last_error_right = error_r;
+    
+    // uses the parameters at the top of this file
+    correction_left = error_l * k_p + acc_error_left * k_i + d_error_l * k_d;
+    correction_right = error_r * k_p + acc_error_right * k_i + d_error_r * k_d;
+    
+    
+     
+    if(MOTORL + correction_left < MOTOR_MAX)
+        MOTORL += correction_left;
+    
+    if(MOTORR + correction_right < MOTOR_MAX)
+        MOTORR += correction_right;
+}
+
+
+/**
+ * Tests the left-right control using the sensors.
+ * 
+ * Uses a basic P-controller.
+ * 
+ * Works, but not great. Made obsolete by testMotion_nested().
+ */
+void testMotion_sharp() {
+    
+    if(setup == 1) {
+        setupMotors();
+        setupSensors();
+        // set motor directions: left fwd, right fwd
+        MOTINL1 = 1;
+        MOTINL2 = 0;
+        MOTINR1 = 1;
+        MOTINR2 = 0;
+        setup = 0;
+    }
+    
+    
+    MOTORL = dc*MOTOR_MAX;
+    MOTORR = dc*MOTOR_MAX;
+    
+    // controller
+    
+    int left, front, right;
+    sharpRaw(&left, &front, &right);
+    
+    
+    correction_left = (left - right) * 0.1;
+    correction_right = (right - left) * 0.1;
+     
+    if(MOTORL + correction_left < MOTOR_MAX)
+        MOTORL += correction_left;
+    
+    if(MOTORR + correction_right < MOTOR_MAX)
+        MOTORR += correction_right;
+    
+}
+
+
+/**
+ * Extracts the same functionality as testMotion_PID() to its own function.
+ * 
+ * This function can be used from within others, and will be further changed 
+ * until we can directly move it over to a new motor.c
+ * 
+ * @param v_l The desired volocity of the left motor
+ * @param v_r The desired velocity of the right motor
+ * @param reset If 1, all configuration will be reset, if 0, ignored
+ */
+void control_PID(int v_l, int v_r, int reset) {
+    if(reset == 1) {
+        setupMotors();
+        setupEncoders();
+        // set motor directions: left fwd, right fwd
+        if(v_l >= 0) {
+            MOTINL1 = 1;
+            MOTINL2 = 0;
+        } else {
+            MOTINL1 = 0;
+            MOTINL2 = 1;
+        }
+        if(v_r >= 0) {
+            MOTINR1 = 1;
+            MOTINR2 = 0;
+        } else {
+            MOTINR1 = 0;
+            MOTINR2 = 1;
+        }
+
+        MOTORL = dc*MOTOR_MAX;
+        MOTORR = dc*MOTOR_MAX;
+        
+        correction_left = 0;
+        correction_right = 0;
+        last_error_left = 0;
+        last_error_right = 0;
+        
+        acc_error_left = 0;
+        acc_error_right = 0;
+        
+        reset = 0;
+    }
+    
+    // controller
+    
+    float left = getVelocityInCountsPerSample_1();
+    float right = getVelocityInCountsPerSample_2();
+    
+    // P-part
+    float error_l = v_l-left;
+    float error_r = v_r-right;
+    
+    // I-part
+    acc_error_left += error_l;
+    acc_error_right += error_r;
+    
+    //D-part
+    float d_error_l = error_l - last_error_left;
+    float d_error_r = error_r - last_error_right;
+    
+    last_error_left = error_l;
+    last_error_right = error_r;
+    
+    // uses the parameters from the top of this file
+    correction_left = error_l * k_p + acc_error_left * k_i + d_error_l * k_d;
+    correction_right = error_r * k_p + acc_error_right * k_i + d_error_r * k_d;
+    
+    
+     
+    if(MOTORL + correction_left < MOTOR_MAX)
+        MOTORL += correction_left;
+    
+    if(MOTORR + correction_right < MOTOR_MAX)
+        MOTORR += correction_right;
+}
+
+
+/**
+ * Tests slowly driving forward using a nested controller,
+ * unifying testMotion_Sensor and testMotion_PD.
+ */
+void testMotion_nested() {
+    
+    if(setup == 1) {
+        setupMotors();
+        setupEncoders();
+        setupSensors();
+        // set motor directions: left fwd, right fwd
+        MOTINL1 = 1;
+        MOTINL2 = 0;
+        MOTINR1 = 1;
+        MOTINR2 = 0;
+
+        MOTORL = dc*MOTOR_MAX;
+        MOTORR = dc*MOTOR_MAX;
+        
+        correction_left = 0;
+        correction_right = 0;
+        last_error_left = 0;
+        last_error_right = 0;
+        
+        acc_error_left = 0;
+        acc_error_right = 0;
+        
+        // desired velocity in ticks per sample,
+        // 2112 ticks/rotation at 0.5 rotations/second
+        // and 100 samples/second => 10.56 ticks per sample
+        v_dest_left = 10;
+        v_dest_right = 10;
+        
+        
+        setup = 0;
+    }
+    
+    // controller
+    
+    // outer control loop: sideways using sensors
+    int sensor_left, unused, sensor_right;
+    sharpRaw(&sensor_left, &unused, &sensor_right);
+    
+    // v_dest ~ 10, sensor diff for 1cm ~ 800,
+    // so we have to use *very* small weights
+    
+    v_dest_left = 10 - (sensor_left - sensor_right) * 0.003;
+    v_dest_right = 10 - (sensor_right - sensor_left) * 0.003;
+    
+    
+    // inner control loop, bring v_dest to the motors
+    control_PID(v_dest_left, v_dest_right, 0);
+}
+
+/**
+ * Doesnt work yet. Should apply PID control backwards
+ */
+void testMotion_rotate() {
+    
+    int origin;
+    
+    if(setup == 1) {
+        setupMotors();
+        setupEncoders();
+        setupLED24();
+        // set motor directions: left bwd, right fwd
+        MOTINL1 = 0;
+        MOTINL2 = 1;
+        MOTINR1 = 1;
+        MOTINR2 = 0;
+        mouseState = RIGHT;
+    }
+    
+    
+    if(mouseState == RIGHT) {
+        control_PID(-10, -10, setup);
+        if(setup == 1) {
+            origin = getPositionInRad_2();
+            setup = 0;
+        }
+        
+        if(getPositionInRad_2() >= origin + 5){
+            mouseState = FRONT;
+            LED2 = LEDOFF;
+        }
+    } else {
+        MOTINL1 = 1;
+        MOTINL2 = 1;
+        MOTINR1 = 1;
+        MOTINR2 = 1;
+    }
+    
+}
+
+
+/**
+ * Test driving up and down a corridor.
+ * 
+ * Uses nested control for driving forward, and no control for turning.
+ * Should be extended to use control for turning as soon as testMotion_rotate
+ * works. Uses a short delay to avoid spinning all the time.
+ * Also tests a very basic automaton.
+ */
+void testMotion_turn() {
+    
+    if(setup == 1) {
+        setupMotors();
+        setupSensors();
+        setupEncoders();
+        setupLED24();
+        // set motor directions: left fwd, right fwd
+        MOTINL1 = 1;
+        MOTINL2 = 0;
+        MOTINR1 = 1;
+        MOTINR2 = 0;
+
+        MOTORL = dc*MOTOR_MAX;
+        MOTORR = dc*MOTOR_MAX;
+        
+        correction_left = 0;
+        correction_right = 0;
+        last_error_left = 0;
+        last_error_right = 0;
+        
+        acc_error_left = 0;
+        acc_error_right = 0;
+        
+        mouseState = FRONT;
+        setup = 0;
+    }
+    
+    
+    float origin;
+    
+    
+    switch(mouseState) {
+    case FRONT:
+        
+
+        // set motor directions: left fwd, right fwd
+        MOTINL1 = 1;
+        MOTINL2 = 0;
+        MOTINR1 = 1;
+        MOTINR2 = 0;
+
+        testMotion_nested();
+
+        int unused1, front, unused2;
+        sharpRaw(&unused1, &front, &unused2);
+        
+        LED2 = front >= 1500;
+
+        if(front >= 1500 && delay >= 50) {
+            mouseState = RIGHT;
+        }
+        
+        delay ++;
+        
+        break;
+    case RIGHT:
+        
+        origin = getPositionInRad_2();
+        
+        MOTINL1 = 0;
+        MOTINL2 = 1;
+        MOTINR1 = 1;
+        MOTINR2 = 0;
+        
+        MOTORL = 0.07*MOTOR_MAX;
+        MOTORR = 0.07*MOTOR_MAX;
+        
+        while(abs(getPositionInRad_2() - origin) <= 3);
+        
+        mouseState = FRONT;
+        // reset encoders so the backwards turning motor doesnt mess up the
+        // integral part
+        setupEncoders();
+        // set half a second delay before we can start turning again
+        delay = 0;
+        break;
+    default:
+        break;
+    }   
+}

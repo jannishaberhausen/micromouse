@@ -1,6 +1,8 @@
 #ifndef HWTEST_H
 #define	HWTEST_H
 
+#include "pathfinder.h"
+
 #ifdef	__cplusplus
 extern "C" {
 #endif
@@ -11,6 +13,9 @@ extern "C" {
      * yet)
      */
     extern int setup;
+    
+    // for communication with pathfinder
+    extern direction mouseState;
     
     void testSwitch();
     void testTimer();
