@@ -18,6 +18,7 @@
 // #include "hw_tests.h"
 #include "mouse_tests.h"
 #include "mouse_motion.h"
+#include "sharp.c"
 
 #include <math.h>
 #include <stdio.h>
@@ -78,7 +79,7 @@ void driveRightTurn(int degrees) {
     float encoder_start = getPositionInRad_2();
 
     // calculate rad from degrees: degrees * 0.02755 = rad
-    float rotation_in_rad = (float) degress * 0.02755;
+    float rotation_in_rad = (float) degrees * 0.02755;
 
     setMotorDirections_RightTurn();
 
@@ -165,13 +166,13 @@ int checkForWallAhead(int front) {
  * Checks whether there is a corner to the right. Does not exclude the 
  * possibility of a corner to the left or other type of junctions.
  * 
- * @param
- *      right (int): distance measurement from right sensor
  * @return
  *      1 = there is a corner to the right, 0 = there is no corner to the right
  */
-int checkForRightCorner(int right) {
-    
+int checkForRightCorner() {
+    int left, right, front;
+    get_walls(&left, &front, &right);
+    return right;
 }
 
 
@@ -179,13 +180,13 @@ int checkForRightCorner(int right) {
  * Checks whether there is a corner to the left. Does not exclude the 
  * possibility of a corner to the right or other type of junctions.
  * 
- * @param
- *      left (int): distance measurement from left sensor
  * @return
  *      1 = there is a corner to the left, 0 = there is no corner to the left
  */
-int checkForLeftCorner(int left) {
-    
+int checkForLeftCorner() {
+    int left, right, front;
+    get_walls(&left, &front, &right);
+    return left;
 }
 
 

@@ -85,10 +85,10 @@ void __attribute__((__interrupt__, auto_psv)) _T1Interrupt(void)
     //testSensorsLR();
     //testSensorsF();
     //testMotion_P();
-    //testMotion_PID(10, 10);
+    testMotion_PID(10, 10);
     //testMotion_nested();
     //testMotion_rotate();
-    testMotion_turn();
+    //testMotion_turn();
     //testMouseSlowMotionForward();
     //testMouseSlowMotionForwardEncoderControl();
     //testMotorBreak();
