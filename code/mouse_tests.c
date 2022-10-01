@@ -106,18 +106,15 @@ void testSlowMotionForwardEncoderControl() {
  * Tests motors and sensors.
  */
 void testStraightCorridor() {
-    if (perform_only_once == 1) {
+    if (setup == 1) {
         setupMotors();
         setupSensors();
         setupEncoders();
-        setupLED24();
         resetController();
 
-        perform_only_once = 0;
+        setup = 0;
     }
 
-    setupLED24();
-    LED2 = !LED2;
     driveForward();
 }
 
@@ -198,7 +195,16 @@ void testRotation() {
     }
     
     for(int i=0; i<4; i++) {
-        
+        driveRightTurn(90);
+    }
+    for(int i=0; i<4; i++) {
+        driveLeftTurn(90);
+    }
+    for(int i=0; i<2; i++) {
+        driveRightTurn(180);
+    }
+    for(int i=0; i<2; i++) {
+        driveLeftTurn(180);
     }
 }
 
