@@ -202,17 +202,16 @@ void testRotation() {
     }
 }
 
-/* #############################################################################
- * ######## HAVE NOT CHANGED FUNCTIONs BELOW TO MATCH THE NEW FORMAT ###########
- * ###########################################################################*/
 
 /**
- * Test motors, encoders, and sensors. 
+ * This test uses the simple controller from testMouseMotionAlongCorridor(). 
+ * Additionally, the mouse registers the end of the corridor and performs a 180 
+ * degrees turn before going back the corridor. The switching between states is 
+ * implemented by a simple FSM. 
  * 
- * Uses the simple controller from testMouseMotionAlongCorridor(). Additionally, 
- * the mouse registers the end of the corridor and performs a 180 degrees turn 
- * before going back the corridor. The switching between states is implemented
- * by a simple FSM.
+ * Test setup: setup a straight corridor with no corners.
+ * 
+ * Tests motors, encoders, and sensors.
  */
 void testMouseMotionBackAndForthInCorridor() {
     if (setup == 1) {
@@ -225,168 +224,42 @@ void testMouseMotionBackAndForthInCorridor() {
         setup = 0;
     }
 
-    int error_left_breaking;
-    int error_right_breaking;
-
     switch (mouseState) {
         case FORWARD:
-            // set motor directions. both forward
-            MOTINL1 = 1;
-            MOTINL2 = 0;
-            MOTINR1 = 1;
-            MOTINR2 = 0;
-
-            // factors for controller
-            float kp_sensor = 0.1;
-            float ki_sensor = 0.01;
-
-            // turn both motors with a slow speed
-            MOTORL = 0.04 * MOTOR_MAX;
-            MOTORR = 0.04 * MOTOR_MAX;
+            driveForward();
 
             int left, right, front;
             sharpRaw(&left, &front, &right);
-
-            // define error as signed distance from middle of straight corridor
-            int error = right - left;
-
-            float update = kp_sensor * error + ki_sensor * (error + error_previous);
-
-            MOTORL += update;
-            MOTORR -= update;
-
-            error_previous = error;
-
-            if (front > 2000) {
+            if(checkForWallAhead(front)){
                 mouseState = BRAKE;
             }
-
             break;
+            
         case BRAKE:
-            // define error as remaining velocity in the motors
-            error_left_breaking = getVelocityInCountsPerSample_1();
-            error_right_breaking = getVelocityInCountsPerSample_2();
-
-            // break motors fast
-            if (error_left_breaking > 0) {
-                MOTINL1 = 0;
-                MOTINL2 = 1;
-            } else {
-                MOTINL1 = 1;
-                MOTINL2 = 0;
-            }
-
-            if (error_right_breaking > 0) {
-                MOTINR1 = 0;
-                MOTINR2 = 1;
-            } else {
-                MOTINR1 = 1;
-                MOTINR2 = 0;
-            }
-
-            float kp_encoder = 1;
-
-            MOTORL += kp_encoder * error_left_breaking;
-            MOTORR -= kp_encoder * error_right_breaking;
-
+            brake();
             mouseState = RIGHT_TURN;
-
             break;
+            
         case RIGHT_TURN:
-            testRotation();
+            driveRightTurn(180);
             mouseState = FORWARD;
             break;
     }
 }
 
+/* #############################################################################
+ * ######## HAVE NOT CHANGED FUNCTIONs BELOW TO MATCH THE NEW FORMAT ###########
+ * ###########################################################################*/
+
 /**
- * Tests the motors and the sensors.
+ * In this test the mouse should move along a straight corridor only relying on 
+ * one sensor. This behavior is necessary at corners. Here it can be tested in a 
+ * longer corridor.
  * 
- * The mouse should follow a straight corridor until it reaches the end of the 
- * corridor. The mouse should stop exactly in the middle of the cell.
- */
-void testMouseStopBeforeWall() {
-    if (setup == 1) {
-        setupMotors();
-        setupEncoders();
-        setupSensors();
-
-        mouseState = FORWARD;
-
-        setup = 0;
-    }
-
-    int left, right, front;
-    sharpRaw(&left, &front, &right);
-
-    switch (mouseState) {
-        case FORWARD:
-            // set motor directions. both forward
-            MOTINL1 = 1;
-            MOTINL2 = 0;
-            MOTINR1 = 1;
-            MOTINR2 = 0;
-
-            // factors for controller
-            float kp_sensor = 0.1;
-            float ki_sensor = 0.01;
-
-            // turn both motors with a slow speed
-            MOTORL = 0.04 * MOTOR_MAX;
-            MOTORR = 0.04 * MOTOR_MAX;
-
-            // define error as signed distance from middle of straight corridor
-            int error = right - left;
-
-            float update = kp_sensor * error + ki_sensor * (error + error_previous);
-
-            MOTORL += update;
-            MOTORR -= update;
-
-            error_previous = error;
-
-            if (front > desired_distance_to_front_wall) {
-                mouseState = BRAKE;
-            }
-
-            break;
-        case BRAKE:
-            if (abs(front - desired_distance_to_front_wall) <= distance_to_front_wall_threshold) {
-                // stop motors
-                MOTORL = 0;
-                MOTORR = 0;
-            }
-
-            // define error as distance from desired wall distance
-            error = front - desired_distance_to_front_wall;
-
-            // break motors fast
-            if (error > 0) {
-                MOTINL1 = 0;
-                MOTINL2 = 1;
-                MOTINR1 = 0;
-                MOTINR2 = 1;
-            } else {
-                MOTINL1 = 1;
-                MOTINL2 = 0;
-                MOTINR1 = 1;
-                MOTINR2 = 0;
-            }
-
-            // turn both motors with a slow speed
-            MOTORL = 0.04 * MOTOR_MAX;
-            MOTORR = 0.04 * MOTOR_MAX;
-
-            break;
-    }
-}
-
-/**
+ * Test setup: setup a straight wall with no corners and no walls on the 
+ * opposite side.
+ * 
  * Tests the motors and sensors.
- * 
- * The mouse should move along a straight corridor only relying on one sensor. 
- * This behavior is necessary at corners. Here it can be tested in a longer 
- * corridor.
  */
 void testMouseOnlyRelyOnOneSensor() {
     if (setup == 1) {
@@ -394,10 +267,7 @@ void testMouseOnlyRelyOnOneSensor() {
         setupSensors();
 
         // set motor directions. both forward
-        MOTINL1 = 1;
-        MOTINL2 = 0;
-        MOTINR1 = 1;
-        MOTINR2 = 0;
+        setMotorDirections_Forward();
 
         setup = 0;
     }

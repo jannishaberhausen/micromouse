@@ -16,8 +16,8 @@ extern "C" {
 
     // State Transition Checks 
     int checkForWallAhead(int front);
-    int checkForRightCorner(int right);
-    int checkForLeftCorner(int left);
+    int checkForRightCorner();
+    int checkForLeftCorner();
     int checkForGoal();
 
     // Hardware Macros
