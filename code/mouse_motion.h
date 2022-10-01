@@ -1,16 +1,15 @@
 #ifndef MOUSEMOTION_H
 #define	MOUSEMOTION_H
 
+// desired driving speed of the micromouse
+#define BASE_SPEED 10
+
 #ifdef	__cplusplus
 extern "C" {
 #endif
     
-    // fraction of base speed of left and right motors
-    float vbl = 0.04;
-    float vbr = 0.04;
-    
     // Motion functions
-    void driveForward(int distance_in_cm, short number_of_cells);
+    void driveForward();
     void driveRightTurn(int degrees);
     void driveLeftTurn(int degrees);
     void brake();

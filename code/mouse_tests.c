@@ -17,6 +17,7 @@
 #include "sharp.h"
 #include "hw_tests.h"
 #include "mouse_tests.h"
+#include "mouse_motion.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -31,7 +32,7 @@
 
 int perform_only_once = 1;
 
-state mouseState;
+direction mouseState;
 
 int error_previous = 0;
 
@@ -105,13 +106,18 @@ void testSlowMotionForwardEncoderControl() {
  * Tests motors and sensors.
  */
 void testStraightCorridor() {
-    if (setup == 1) {
+    if (perform_only_once == 1) {
         setupMotors();
         setupSensors();
+        setupEncoders();
+        setupLED24();
+        resetController();
 
-        setup = 0;
+        perform_only_once = 0;
     }
 
+    setupLED24();
+    LED2 = !LED2;
     driveForward();
 }
 

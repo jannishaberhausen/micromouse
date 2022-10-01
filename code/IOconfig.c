@@ -127,8 +127,8 @@ void setupLED24() {
         // LED4 is set to PWM. Disable it
         PWM1CON1bits.PEN2L = 0;
     }
-    LED2 = LEDON;
-    LED4 = LEDON;
+    LED2 = LEDOFF;
+    LED4 = LEDOFF;
 }
 
 

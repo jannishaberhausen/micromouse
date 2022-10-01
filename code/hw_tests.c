@@ -19,6 +19,7 @@ int setup = 1;
 
 int ctr = 0;
 
+/*
 // dutycycle to make motors turn slowly
 float dc = 0.05;
 
@@ -47,7 +48,7 @@ direction mouseState;
 
 int delay;
 
-
+*/
 
 /**
  * Tests the switch.
@@ -224,6 +225,7 @@ void testSensorsF() {
  * 
  * Works, but not great, made obsolete by testMotion_PID().
  */
+/*
 void testMotion_P() {
     
     // desired velocity in ticks per sample,
@@ -264,7 +266,7 @@ void testMotion_P() {
     if(MOTORR + correction_right < MOTOR_MAX)
         MOTORR += correction_right;
 }
-
+*/
 
 /**
  * Tests slowly driving forward using a PID controller.
@@ -272,6 +274,7 @@ void testMotion_P() {
  * Keeps the velocity of both motors independently
  * to half a rotation per second.
  */
+/*
 void testMotion_PID() {
     
     // desired velocity in ticks per sample,
@@ -334,7 +337,7 @@ void testMotion_PID() {
     if(MOTORR + correction_right < MOTOR_MAX)
         MOTORR += correction_right;
 }
-
+*/
 
 /**
  * Tests the left-right control using the sensors.
@@ -343,6 +346,7 @@ void testMotion_PID() {
  * 
  * Works, but not great. Made obsolete by testMotion_nested().
  */
+/*
 void testMotion_sharp() {
     
     if(setup == 1) {
@@ -376,7 +380,7 @@ void testMotion_sharp() {
         MOTORR += correction_right;
     
 }
-
+*/
 
 /**
  * Extracts the same functionality as testMotion_PID() to its own function.
@@ -388,6 +392,7 @@ void testMotion_sharp() {
  * @param v_r The desired velocity of the right motor
  * @param reset If 1, all configuration will be reset, if 0, ignored
  */
+/*
 void control_PID(int v_l, int v_r, int reset) {
     if(reset == 1) {
         setupMotors();
@@ -454,12 +459,13 @@ void control_PID(int v_l, int v_r, int reset) {
     if(MOTORR + correction_right < MOTOR_MAX)
         MOTORR += correction_right;
 }
-
+*/
 
 /**
  * Tests slowly driving forward using a nested controller,
  * unifying testMotion_Sensor and testMotion_PD.
  */
+/*
 void testMotion_nested() {
     
     if(setup == 1) {
@@ -509,10 +515,12 @@ void testMotion_nested() {
     // inner control loop, bring v_dest to the motors
     control_PID(v_dest_left, v_dest_right, 0);
 }
+*/
 
 /**
  * Doesnt work yet. Should apply PID control backwards
  */
+/*
 void testMotion_rotate() {
     
     int origin;
@@ -549,7 +557,7 @@ void testMotion_rotate() {
     }
     
 }
-
+*/
 
 /**
  * Test driving up and down a corridor.
@@ -559,6 +567,7 @@ void testMotion_rotate() {
  * works. Uses a short delay to avoid spinning all the time.
  * Also tests a very basic automaton.
  */
+/*
 void testMotion_turn() {
     
     if(setup == 1) {
@@ -640,3 +649,4 @@ void testMotion_turn() {
         break;
     }   
 }
+*/

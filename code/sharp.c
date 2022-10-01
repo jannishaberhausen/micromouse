@@ -77,9 +77,6 @@ void sharpRaw(int *left, int *front, int *right)
 /**
  * Collect a filtered and scaled measurement.
  * 
- * !!!!!NUMBERS USE 12bit SAMPLING!!!!!!!!!!!
- * not usable like that, update numbers.
- * 
  * Output in 0.1 mm.
  * Used for motor control, especially for the front sensor.
  * 
@@ -115,10 +112,6 @@ void sharpDistance(int *left, int *front, int *right)
     
     // Interpolate to distance
     // we need a good result from 2cm - 8cm, interpolate values for 4cm and 6cm
-    // 600 *0.1mm: 1328
-    // 400 *0.1mm: 3090
-    // => Interval width: 1762
-    // 1762 / 200 = 8.81
     l = (int) (400 - (l - 3090.0) / 8.81);
     r = (int) (400 - (r - 3090.0) / 8.81);
     f = (int) (400 - (f - 3090.0) / 8.81);

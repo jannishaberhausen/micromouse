@@ -24,6 +24,66 @@
 #include <stdlib.h>
 
 
+// control parameters
+float k_p = 2;
+float k_i = 0.001;
+float k_d = 80;
+
+
+// error terms used by the controller. Have to be defined globally
+float correction_left = 0;
+float correction_right = 0;
+float last_error_left = 0;
+float last_error_right = 0;
+
+float acc_error_left = 0;
+float acc_error_right = 0;
+
+// desired velocity in ticks per sample,
+// 2112 ticks/rotation at 0.5 rotations/second
+// and 100 samples/second => 10.56 ticks per sample
+float v_dest_left = BASE_SPEED;
+float v_dest_right = BASE_SPEED;
+
+
+// fraction of base speed of left and right motors
+float vbl = 0.04;
+float vbr = 0.04;
+
+
+/**
+ * Reset the encoders and all error terms.
+ * 
+ * Has to be called after every state change of the motor controller,
+ * otherwise the integral part of the controller can cause problems.
+ */
+void resetController() {
+    
+        // unnecessary, maybe remove. But does not hurt to do this.
+        setupMotors();
+        setupSensors();
+        
+        // reset encoders
+        setupEncoders();
+        
+        // set motor directions: left fwd, right fwd
+        setMotorDirections_Forward();
+        
+        // reset error terms
+        correction_left = 0;
+        correction_right = 0;
+        last_error_left = 0;
+        last_error_right = 0;
+        
+        acc_error_left = 0;
+        acc_error_right = 0;
+        
+        v_dest_left = BASE_SPEED;
+        v_dest_right = BASE_SPEED;
+}
+
+
+
 /*#############################################################################
  ################# FUNCTIONS DEFINING THE MOTION OF THE MOUSE #################
  ############################################################################*/
@@ -36,35 +96,57 @@
  * drives forward until it reaches a junction or a dead end and changes state.
  * 
  * @params 
- *      distance_in_cm (int): optional, distance to drive forward in cm
- *      number_of_cells (int): optional, number of cells to drive forward
+ *      distance_in_cm (int):   optional, distance to drive forward in cm
+ *      number_of_cells (int):  optional, number of cells to drive forward
  */
-void driveForward(int distance_in_cm, short number_of_cells) {
-    // set motor directions. Both forward.
-    setMotorDirections_Forward();
+void driveForward() {
     
-    // int distance_travelled = 0;
-    // while(distance_travelled < distance_in_cm) {
+    ////////////////////////////////////////////////////////////////////////
+    //            outer control loop: sideways using sensors              //
+    ////////////////////////////////////////////////////////////////////////
     
-    // (re)set motor speeds
-    MOTORL = vbl * MOTOR_MAX;
-    MOTORR = vbr * MOTOR_MAX;
-
-    int left, right, front;
-    sharpRaw(&left, &front, &right);
-
-    // define error as signed distance from middle of straight corridor
-    int error = right - left;
-
-    // factor for P control
-    float kp = 0.1;
-
-    // update motor speeds based on error readings
-    MOTORL += kp * error;
-    MOTORR -= kp * error;
-
-    // distance_travelled += distanceFromEncoderReadings(); 
-    //}
+    int sensor_left, unused, sensor_right;
+    sharpRaw(&sensor_left, &unused, &sensor_right);
+    
+    // v_dest ~ 10, sensor diff for 1cm ~ 800,
+    // so we have to use *very* small weights
+    
+    v_dest_left = 10 - (sensor_left - sensor_right) * 0.003;
+    v_dest_right = 10 - (sensor_right - sensor_left) * 0.003;
+    
+    
+    ///////////////////////////////////////////////////////////////////////
+    //         inner control loop, bring v_dest to the motors            //
+    ///////////////////////////////////////////////////////////////////////
+    
+    float left = getVelocityInCountsPerSample_1();
+    float right = getVelocityInCountsPerSample_2();
+    
+    // P-part
+    float error_l = v_dest_left-left;
+    float error_r = v_dest_right-right;
+    
+    // I-part
+    acc_error_left += error_l;
+    acc_error_right += error_r;
+    
+    //D-part
+    float d_error_l = error_l - last_error_left;
+    float d_error_r = error_r - last_error_right;
+    
+    last_error_left = error_l;
+    last_error_right = error_r;
+    
+    // uses the parameters from the top of this file
+    correction_left = error_l * k_p + acc_error_left * k_i + d_error_l * k_d;
+    correction_right = error_r * k_p + acc_error_right * k_i + d_error_r * k_d;
+    
+    
+    if(MOTORL + correction_left < MOTOR_MAX)
+        MOTORL += correction_left;
+    
+    if(MOTORR + correction_right < MOTOR_MAX)
+        MOTORR += correction_right;
 }
 
 
@@ -78,14 +160,15 @@ void driveRightTurn(int degrees) {
     float encoder_start = getPositionInRad_2();
 
     // calculate rad from degrees: degrees * 0.02755 = rad
-    float rotation_in_rad = (float) degress * 0.02755;
+    // mouse rotation to wheel rotation: *1.55
+    float rotation_in_rad = (float) degrees * 0.02755 * 1.55;
 
     setMotorDirections_RightTurn();
 
     MOTORL = vbl * MOTOR_MAX;
     MOTORR = vbr * MOTOR_MAX;
 
-    while (getPositionInRad_2() - encoder_start < rotation_in_rad);
+    while (abs(getPositionInRad_2() - encoder_start) < rotation_in_rad);
 
     brake();
 }
@@ -98,6 +181,20 @@ void driveRightTurn(int degrees) {
  *      degrees (int): size of turning angle 
  */
 void driveLeftTurn(int degrees) {
+    float encoder_start = getPositionInRad_2();
+
+    // calculate rad from degrees: degrees * 0.02755 = rad
+    // mouse rotation to wheel rotation: *1.55
+    float rotation_in_rad = (float) degrees * 0.02755 * 1.55;
+
+    setMotorDirections_LeftTurn();
+
+    MOTORL = vbl * MOTOR_MAX;
+    MOTORR = vbr * MOTOR_MAX;
+
+    while (abs(getPositionInRad_2() - encoder_start) < rotation_in_rad);
+
+    brake();
     
 }
 

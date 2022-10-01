@@ -1,5 +1,5 @@
 #include "pathfinder.h"
-#include "hw_tests.h"
+//#include "hw_tests.h"
 #include "pathfinder_tests.h"
 #include <stdio.h>
 
@@ -246,7 +246,7 @@ int DEBUG_get_completed() {
  */
 void DEBUG_set_state(direction newState) {
     debug_delay = 100;
-    mouseState = newState;
+    //mouseState = newState;
 }
 
 void DEBUG_setup_maze() {
@@ -259,7 +259,7 @@ void DEBUG_setup_maze() {
      *   +---+---+---+---+
      * 2 |               |
      *   +   +---+   +   +
-     * 1 |   |       |   |
+     * 1 |           |   |
      *   +---+   +---+   +
      * 0 | s     | g     |
      *   +---+---+---+---+
@@ -288,14 +288,14 @@ void DEBUG_setup_maze() {
     env[3][0].walls[3]=WAY;
 
     env[0][1].walls[0]=WAY;
-    env[0][1].walls[1]=WALL;
+    env[0][1].walls[1]=WAY;
     env[0][1].walls[2]=WALL;
     env[0][1].walls[3]=WALL;
 
     env[1][1].walls[0]=WALL;
     env[1][1].walls[1]=WAY;
     env[1][1].walls[2]=WAY;
-    env[1][1].walls[3]=WALL;
+    env[1][1].walls[3]=WAY;
 
     env[2][1].walls[0]=WAY;
     env[2][1].walls[1]=WALL;

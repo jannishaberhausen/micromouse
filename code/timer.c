@@ -4,6 +4,7 @@
 #include "timer.h"
 #include "IOconfig.h"
 #include "hw_tests.h"
+#include "mouse_tests.h"
 
 /**
  * set up TIMER1
@@ -88,7 +89,7 @@ void __attribute__((__interrupt__, auto_psv)) _T1Interrupt(void)
     //testMotion_PID(10, 10);
     //testMotion_nested();
     //testMotion_rotate();
-    testMotion_turn();
+    //testMotion_turn();
     //testMouseSlowMotionForward();
     //testMouseSlowMotionForwardEncoderControl();
     //testMotorBreak();
@@ -99,4 +100,5 @@ void __attribute__((__interrupt__, auto_psv)) _T1Interrupt(void)
     //testMouseOnlyRelyOnOneSensor();
     //testMouseAlwaysFollowRightWall();
     //testRightTurn(360);
+    testStraightCorridor();
 }
