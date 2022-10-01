@@ -18,7 +18,6 @@
 // #include "hw_tests.h"
 #include "mouse_tests.h"
 #include "mouse_motion.h"
-#include "sharp.c"
 
 #include <math.h>
 #include <stdio.h>
@@ -26,9 +25,9 @@
 
 
 // control parameters
-float k_p = 2;
-float k_i = 0.001;
-float k_d = 80;
+float k_p = 150;
+float k_i = 2;
+float k_d = 0;
 
 
 // error terms used by the controller. Have to be defined globally
@@ -50,6 +49,9 @@ float v_dest_right = BASE_SPEED;
 // fraction of base speed of left and right motors
 float vbl = 0.04;
 float vbr = 0.04;
+
+
+int delay = 0;
 
 
 /**
@@ -90,42 +92,22 @@ void resetController() {
  ############################################################################*/
 
 /**
- * Controls the mouse's motion along a straight corridor. Uses the right and 
- * left sensor to stabilize the mouse in the middle of the corridor. Implements
- * a closed-loop control to do so. Either accepts as input the desired distance 
- * to drive in cm or the number of cells. If both inputs are null then the mouse
- * drives forward until it reaches a junction or a dead end and changes state.
+ * Controls both motors individually to a desired speed.
  * 
- * @params 
- *      distance_in_cm (int):   optional, distance to drive forward in cm
- *      number_of_cells (int):  optional, number of cells to drive forward
+ * Implements a closed-loop PID controller.
+ * Helper function for all driveForward functions.
+ * 
+ * @param v_l Desired speed of the left motor
+ * @param v_r Desired speed of the right motor
  */
-void driveForward() {
-    
-    ////////////////////////////////////////////////////////////////////////
-    //            outer control loop: sideways using sensors              //
-    ////////////////////////////////////////////////////////////////////////
-    
-    int sensor_left, unused, sensor_right;
-    sharpRaw(&sensor_left, &unused, &sensor_right);
-    
-    // v_dest ~ 10, sensor diff for 1cm ~ 800,
-    // so we have to use *very* small weights
-    
-    v_dest_left = 10 - (sensor_left - sensor_right) * 0.003;
-    v_dest_right = 10 - (sensor_right - sensor_left) * 0.003;
-    
-    
-    ///////////////////////////////////////////////////////////////////////
-    //         inner control loop, bring v_dest to the motors            //
-    ///////////////////////////////////////////////////////////////////////
+void controlFixedSpeed(float v_l, float v_r) {
     
     float left = getVelocityInCountsPerSample_1();
     float right = getVelocityInCountsPerSample_2();
     
     // P-part
-    float error_l = v_dest_left-left;
-    float error_r = v_dest_right-right;
+    float error_l = v_l-left;
+    float error_r = v_r-right;
     
     // I-part
     acc_error_left += error_l;
@@ -143,11 +125,144 @@ void driveForward() {
     correction_right = error_r * k_p + acc_error_right * k_i + d_error_r * k_d;
     
     
-    if(MOTORL + correction_left < MOTOR_MAX)
-        MOTORL += correction_left;
+    if(BASE_SPEED + correction_left < MOTOR_MAX)
+        MOTORL = BASE_SPEED + correction_left;
     
-    if(MOTORR + correction_right < MOTOR_MAX)
-        MOTORR += correction_right;
+    if(BASE_SPEED + correction_right < MOTOR_MAX)
+        MOTORR = BASE_SPEED + correction_right;
+    
+}
+
+
+
+/**
+ * Drives the wheels to a fixed position.
+ */
+void controlFixedPosition(float x_l, float x_r) {
+    
+    
+    float left = getPositionInRad_1();
+    float right = getPositionInRad_2();
+    
+    // P-part
+    float error_l = x_l-left;
+    float error_r = x_r-right;
+    
+    // I-part
+    acc_error_left += error_l;
+    acc_error_right += error_r;
+    
+    //D-part
+    float d_error_l = error_l - last_error_left;
+    float d_error_r = error_r - last_error_right;
+    
+    last_error_left = error_l;
+    last_error_right = error_r;
+    
+    // uses the parameters from the top of this file
+    correction_left = error_l * k_p + acc_error_left * k_i + d_error_l * k_d;
+    correction_right = error_r * k_p + acc_error_right * k_i + d_error_r * k_d;
+    
+    
+    if(BASE_SPEED + correction_left < MOTOR_MAX)
+        MOTORL = BASE_SPEED + correction_left;
+    
+    if(BASE_SPEED + correction_right < MOTOR_MAX)
+        MOTORR = BASE_SPEED + correction_right;
+    
+}
+
+
+
+/**
+ * Controls the mouse along a straight line.
+ * 
+ * Uses no sensor input, only relies on the encoders.
+ */
+void driveForwardBlind() {
+    controlFixedSpeed(BASE_SPEED, BASE_SPEED);
+}
+
+
+
+/**
+ * Controls the mouse's motion along a straight corridor. 
+ * 
+ * Uses the right and left sensor to stabilize the mouse in the middle of the 
+ * corridor. Implements a closed-loop nested controller to do so. 
+ * Uses controlFixedSpeed as the inner loop.
+ */
+void driveForwardAlongCorridor() {
+    
+    setMotorDirections_Forward();
+    
+    ////////////////////////////////////////////////////////////////////////
+    //            outer control loop: sideways using sensors              //
+    ////////////////////////////////////////////////////////////////////////
+    
+    int sensor_left, unused, sensor_right;
+    sharpRaw(&sensor_left, &unused, &sensor_right);
+    
+    // v_dest ~ 10, sensor diff for 1cm ~ 800,
+    // so we have to use *very* small weights
+    
+    v_dest_left = 10 + (sensor_left - sensor_right) * 0.003;
+    v_dest_right = 10 + (sensor_right - sensor_left) * 0.003;
+    
+    
+    ///////////////////////////////////////////////////////////////////////
+    //         inner control loop, bring v_dest to the motors            //
+    ///////////////////////////////////////////////////////////////////////
+    
+    controlFixedSpeed(v_dest_left, v_dest_right);
+}
+
+
+/**
+ * Controls the mouse's motion along a straight corridor. 
+ * 
+ * Uses the right and left sensor to stabilize the mouse in the middle of the 
+ * corridor. Implements a closed-loop nested controller to do so. 
+ * Uses controlFixedSpeed as the inner loop.
+ */
+void driveForwardAlongLeftWall() {
+    
+    setMotorDirections_Forward();
+    
+    ////////////////////////////////////////////////////////////////////////
+    //            outer control loop: sideways using sensors              //
+    ////////////////////////////////////////////////////////////////////////
+    
+    int sensor_left, unused, sensor_right;
+    sharpRaw(&sensor_left, &unused, &sensor_right);
+    
+    // v_dest ~ 10, sensor diff for 1cm ~ 800,
+    // so we have to use *very* small weights
+    
+    v_dest_left = 10 + (sensor_left - 1000) * 0.003;
+    v_dest_right = 10 + (1000 - sensor_left) * 0.003;
+    
+    
+    ///////////////////////////////////////////////////////////////////////
+    //         inner control loop, bring v_dest to the motors            //
+    ///////////////////////////////////////////////////////////////////////
+    
+    controlFixedSpeed(v_dest_left, v_dest_right);
+}
+
+
+/**
+ * Controls the mouse's motion along a wall on the left side. 
+ * 
+ * Uses the left sensor to stabilize the mouse in the middle of the 
+ * corridor. Implements a closed-loop nested controller to do so. 
+ * Uses controlFixedSpeed as the inner loop.
+ */
+void driveForward() {
+    
+    setMotorDirections_Forward();
+    
+    driveForwardAlongCorridor();
 }
 
 
@@ -158,16 +273,20 @@ void driveForward() {
  *      degrees (int): size of turning angle 
  */
 void driveRightTurn(int degrees) {
+    delay = 0;
+
+    setMotorDirections_RightTurn();
+    
     float encoder_start = getPositionInRad_2();
 
     // calculate rad from degrees: degrees * 0.02755 = rad
-    // mouse rotation to wheel rotation: *1.55
-    float rotation_in_rad = (float) degrees * 0.02755 * 1.55;
+    // mouse rotation to wheel rotation: *0.24
+    float rotation_in_rad = (float) degrees * 0.01745 * 0.98685488;
 
     setMotorDirections_RightTurn();
 
-    MOTORL = vbl * MOTOR_MAX;
-    MOTORR = vbr * MOTOR_MAX;
+    MOTORL = 0.15 * MOTOR_MAX;
+    MOTORR = 0.15 * MOTOR_MAX;
 
     while (abs(getPositionInRad_2() - encoder_start) < rotation_in_rad);
 

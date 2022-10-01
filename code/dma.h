@@ -10,8 +10,8 @@ extern unsigned int adcData[48]__attribute__((space(dma)));
 void initDMA(void);
 
 //fast access to sensor readings
-#define SHARP_L adcData[0]
-#define SHARP_R adcData[1]
+#define SHARP_R adcData[0]
+#define SHARP_L adcData[1]
 #define SHARP_F adcData[2]
 
 

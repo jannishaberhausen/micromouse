@@ -106,18 +106,15 @@ void testSlowMotionForwardEncoderControl() {
  * Tests motors and sensors.
  */
 void testStraightCorridor() {
-    if (perform_only_once == 1) {
+    if (setup == 1) {
         setupMotors();
         setupSensors();
         setupEncoders();
-        setupLED24();
         resetController();
 
-        perform_only_once = 0;
+        setup = 0;
     }
 
-    setupLED24();
-    LED2 = !LED2;
     driveForward();
 }
 
@@ -197,9 +194,7 @@ void testRotation() {
         setup = 0;
     }
     
-    for(int i=0; i<4; i++) {
-        
-    }
+    driveRightTurn(0);
 }
 
 
@@ -223,6 +218,11 @@ void testMouseMotionBackAndForthInCorridor() {
 
         setup = 0;
     }
+    
+    delay ++;
+    
+    if(mouseState == RIGHT_TURN && delay < 50)
+        mouseState = FORWARD;
 
     switch (mouseState) {
         case FORWARD:

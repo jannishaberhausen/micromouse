@@ -8,6 +8,8 @@
 extern "C" {
 #endif
     
+    extern int delay;
+    
     // Motion functions
     void driveForward();
     void driveRightTurn(int degrees);

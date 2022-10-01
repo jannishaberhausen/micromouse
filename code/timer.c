@@ -86,7 +86,7 @@ void __attribute__((__interrupt__, auto_psv)) _T1Interrupt(void)
     //testSensorsLR();
     //testSensorsF();
     //testMotion_P();
-    testMotion_PID(10, 10);
+    //testMotion_PID(10, 10);
     //testMotion_nested();
     //testMotion_rotate();
     //testMotion_turn();
@@ -95,10 +95,11 @@ void __attribute__((__interrupt__, auto_psv)) _T1Interrupt(void)
     //testMotorBreak();
     //testMouse180DegreesRotation();
     //testMouseMotionAlongCorridor();
-    //testMouseMotionBackAndForthInCorridor();
+    testMouseMotionBackAndForthInCorridor();
     //testMouseStopBeforeWall();
     //testMouseOnlyRelyOnOneSensor();
     //testMouseAlwaysFollowRightWall();
     //testRightTurn(360);
-    testStraightCorridor();
+    //testStraightCorridor();
+    //testRotation();
 }
