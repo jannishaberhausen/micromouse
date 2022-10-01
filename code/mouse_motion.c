@@ -266,6 +266,55 @@ void driveForward() {
 }
 
 
+void driveForwardFollowLeftWall() {
+    ////////////////////////////////////////////////////////////////////////
+    //            outer control loop: sideways using sensors              //
+    ////////////////////////////////////////////////////////////////////////
+    
+    int sensor_left, unused, sensor_right;
+    sharpRaw(&sensor_left, &unused, &sensor_right);
+    
+    // v_dest ~ 10, sensor diff for 1cm ~ 800,
+    // so we have to use *very* small weights
+    
+    v_dest_left = 10 - (sensor_left - 800) * 0.003;
+    v_dest_right = 10 - (800 - sensor_left) * 0.003;
+    
+    ///////////////////////////////////////////////////////////////////////
+    //         inner control loop, bring v_dest to the motors            //
+    ///////////////////////////////////////////////////////////////////////
+    
+    float left = getVelocityInCountsPerSample_1();
+    float right = getVelocityInCountsPerSample_2();
+    
+    // P-part
+    float error_l = v_dest_left-left;
+    float error_r = v_dest_right-right;
+    
+    // I-part
+    acc_error_left += error_l;
+    acc_error_right += error_r;
+    
+    //D-part
+    float d_error_l = error_l - last_error_left;
+    float d_error_r = error_r - last_error_right;
+    
+    last_error_left = error_l;
+    last_error_right = error_r;
+    
+    // uses the parameters from the top of this file
+    correction_left = error_l * k_p + acc_error_left * k_i + d_error_l * k_d;
+    correction_right = error_r * k_p + acc_error_right * k_i + d_error_r * k_d;
+    
+    
+    if(MOTORL + correction_left < MOTOR_MAX)
+        MOTORL += correction_left;
+    
+    if(MOTORR + correction_right < MOTOR_MAX)
+        MOTORR += correction_right;
+}
+
+
 /**
  * Lets the mouse turn clockwise by the specified angle.
  * 

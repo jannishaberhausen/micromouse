@@ -93,6 +93,7 @@ void __attribute__((__interrupt__, auto_psv)) _T1Interrupt(void)
     //testMouseSlowMotionForward();
     //testMouseSlowMotionForwardEncoderControl();
     //testMotorBreak();
+    //testRotation();
     //testMouse180DegreesRotation();
     //testMouseMotionAlongCorridor();
     testMouseMotionBackAndForthInCorridor();

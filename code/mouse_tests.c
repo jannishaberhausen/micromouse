@@ -194,7 +194,18 @@ void testRotation() {
         setup = 0;
     }
     
-    driveRightTurn(0);
+    for(int i=0; i<4; i++) {
+        driveRightTurn(90);
+    }
+    for(int i=0; i<4; i++) {
+        driveLeftTurn(90);
+    }
+    for(int i=0; i<2; i++) {
+        driveRightTurn(180);
+    }
+    for(int i=0; i<2; i++) {
+        driveLeftTurn(180);
+    }
 }
 
 
