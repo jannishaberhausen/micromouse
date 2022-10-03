@@ -1,6 +1,8 @@
 #ifndef MOUSEMOTION_H
 #define	MOUSEMOTION_H
 
+#include "pathfinder.h"
+
 // desired driving speed of the micromouse
 #define BASE_SPEED 10
 
@@ -10,7 +12,12 @@ extern "C" {
     
     extern int delay;
     
+    void setMotionState(direction newState);
+    int getMotionCompleted();
+    void motionFSM();
+    
     // Motion functions
+    void resetController();
     void driveForward();
     void driveRightTurn(int degrees);
     void driveLeftTurn(int degrees);

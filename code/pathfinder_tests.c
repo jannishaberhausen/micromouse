@@ -6,9 +6,9 @@
 cell env[SIZE][SIZE];
 int x;
 int y;
-orientation dir;
+orientation test_dir;
 
-plannerState current_state_planner;
+plannerState test_current_state_planner;
 
 
 // part of motors.h in the real environment
@@ -218,9 +218,9 @@ void prettyPrintMaze(cell maze[SIZE][SIZE]) {
  * @param [OUT] right is there a wall on the right
  */
 void DEBUG_get_walls(int *left, int *front, int *right) {
-    *left = env[x][y].walls[(dir-1)%4];
-    *front = env[x][y].walls[dir];
-    *right = env[x][y].walls[(dir+1)%4];
+    *left = env[x][y].walls[(test_dir-1)%4];
+    *front = env[x][y].walls[test_dir];
+    *right = env[x][y].walls[(test_dir+1)%4];
 }
 
 /**
@@ -355,21 +355,21 @@ int test_main() {
 
     x = 0;
     y = 0;
-    dir = EAST;
+    test_dir = EAST;
     direction move;
 
 
-    initMaze(x, y, dir);
+    initMaze(x, y, test_dir);
     prettyPrintMaze(env);
     printf("\n");
 
     do {
-        move = explore(x, y, dir);
-        dir = (dir+move)%4;
+        move = explore(x, y, test_dir);
+        test_dir = (test_dir+move)%4;
         printMaze(DEBUG_get_maze());
 
         if(move != STOP) {
-            switch (dir) {
+            switch (test_dir) {
                 case NORTH:
                     y++;
                     break;
@@ -420,7 +420,7 @@ int testAutomaton_main() {
     
     // busy wait until started from switch ISR
     //TODO: change state from switch ISR
-    //while(current_state_planner == WAIT_EXPLORE);
+    //while(test_current_state_planner == WAIT_EXPLORE);
     
     ////////////////////////////////////////////////////////////
     //                  2. Explore Phase                      //
@@ -429,15 +429,15 @@ int testAutomaton_main() {
     direction move = STOP;
     x = 0;
     y = 0;
-    dir = NORTH;
+    test_dir = NORTH;
 
-    initMaze(x, y, dir);
+    initMaze(x, y, test_dir);
     
     // loop until explore phase completed
     do {
 
         // plan next step. Includes collecting sensor information
-        move = explore(x, y, dir);
+        move = explore(x, y, test_dir);
         
         
         // execute the movement
@@ -454,10 +454,10 @@ int testAutomaton_main() {
         
         
         // update internal state representation
-        dir = (dir+move)%4;
+        test_dir = (test_dir+move)%4;
 
         if(move != STOP) {
-            switch (dir) {
+            switch (test_dir) {
                 case NORTH:
                     y++;
                     break;
@@ -483,11 +483,11 @@ int testAutomaton_main() {
     //              3. Wait for Exploit Phase                 //
     ////////////////////////////////////////////////////////////
     
-    current_state_planner = WAIT_EXPLOIT;
+    test_current_state_planner = WAIT_EXPLOIT;
     
     // busy wait until started from switch ISR
     //TODO: change state from switch ISR
-    //while(current_state_planner == WAIT_EXPLOIT);
+    //while(test_current_state_planner == WAIT_EXPLOIT);
     
     
     ////////////////////////////////////////////////////////////

@@ -5,6 +5,8 @@
 #include "IOconfig.h"
 #include "timer.h"
 
+#include "pathfinder.h"
+
 /**
  * set up SW1
  */
@@ -35,12 +37,11 @@ void __attribute__((__interrupt__, no_auto_psv)) _CNInterrupt(void)
 {
      _CNIF = 0; 
 
-     // Toggle LED2 and LED4
+     // switch to the next planner state
      if(SW1) {
-        LED2 = !LED2;
-        LED4 = !LED4;
+         if (current_state_planner == WAIT_EXPLORE)
+             current_state_planner = EXPLORE;
+         else if (current_state_planner == WAIT_EXPLOIT)
+             current_state_planner = EXPLOIT;
      }
-     
-     // actual toggle in interrupt
-     // LED4 = SW1;
 }  

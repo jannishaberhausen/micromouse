@@ -15,9 +15,9 @@
 #include "dma.h"
 #include "adc.h"
 #include "sharp.h"
-// #include "hw_tests.h"
-#include "mouse_tests.h"
 #include "mouse_motion.h"
+
+#include "pathfinder.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -50,8 +50,17 @@ float v_dest_right = BASE_SPEED;
 float vbl = 0.04;
 float vbr = 0.04;
 
-
+// counter for dirty delay to avoid infinite spinning in curves.
 int delay = 0;
+
+// stores the starting position so we know how far to drive
+int start_position = 0;
+
+// state variable for the motor control FSM
+direction motionState;
+
+// motionState before the last command, so we know when to reset what
+direction oldState;
 
 
 /**
@@ -219,9 +228,9 @@ void driveForwardAlongCorridor() {
 
 
 /**
- * Controls the mouse's motion along a straight corridor. 
+ * Controls the mouse's motion along a straight wall. 
  * 
- * Uses the right and left sensor to stabilize the mouse in the middle of the 
+ * Uses the only the left sensor to stabilize the mouse in the middle of the 
  * corridor. Implements a closed-loop nested controller to do so. 
  * Uses controlFixedSpeed as the inner loop.
  */
@@ -239,8 +248,45 @@ void driveForwardAlongLeftWall() {
     // v_dest ~ 10, sensor diff for 1cm ~ 800,
     // so we have to use *very* small weights
     
-    v_dest_left = 10 + (sensor_left - 1000) * 0.003;
-    v_dest_right = 10 + (1000 - sensor_left) * 0.003;
+    // (senosr_left - sensor_right) = (sensor_left - (1000-sensor_left))
+    // = (2*sensor_left - 1000)
+    v_dest_left = 10 + (2*sensor_left - 1000) * 0.003;
+    v_dest_right = 10 + (1000 - 2*sensor_left) * 0.003;
+    
+    
+    ///////////////////////////////////////////////////////////////////////
+    //         inner control loop, bring v_dest to the motors            //
+    ///////////////////////////////////////////////////////////////////////
+    
+    controlFixedSpeed(v_dest_left, v_dest_right);
+}
+
+
+/**
+ * Controls the mouse's motion along a straight wall. 
+ * 
+ * Uses only the right sensor to stabilize the mouse in the middle of the 
+ * corridor. Implements a closed-loop nested controller to do so. 
+ * Uses controlFixedSpeed as the inner loop.
+ */
+void driveForwardAlongRightWall() {
+    
+    setMotorDirections_Forward();
+    
+    ////////////////////////////////////////////////////////////////////////
+    //            outer control loop: sideways using sensors              //
+    ////////////////////////////////////////////////////////////////////////
+    
+    int sensor_left, unused, sensor_right;
+    sharpRaw(&sensor_left, &unused, &sensor_right);
+    
+    // v_dest ~ 10, sensor diff for 1cm ~ 800,
+    // so we have to use *very* small weights
+    
+    // (senosr_left - sensor_right) = (sensor_left - (1000-sensor_left))
+    // = (2*sensor_left - 1000)
+    v_dest_left = 10 + (1000 - 2*sensor_right) * 0.003;
+    v_dest_right = 10 + (2*sensor_right - 1000) * 0.003;
     
     
     ///////////////////////////////////////////////////////////////////////
@@ -254,64 +300,36 @@ void driveForwardAlongLeftWall() {
 /**
  * Controls the mouse's motion along a wall on the left side. 
  * 
- * Uses the left sensor to stabilize the mouse in the middle of the 
+ * Uses the left and right sensors to stabilize the mouse in the middle of the 
  * corridor. Implements a closed-loop nested controller to do so. 
- * Uses controlFixedSpeed as the inner loop.
+ * Decides what walls are available at the current position and calls the
+ * appropriate driveForward* function.
  */
 void driveForward() {
     
     setMotorDirections_Forward();
     
-    driveForwardAlongCorridor();
-}
-
-
-void driveForwardFollowLeftWall() {
-    ////////////////////////////////////////////////////////////////////////
-    //            outer control loop: sideways using sensors              //
-    ////////////////////////////////////////////////////////////////////////
+    // decide which controller to use
+    int wall_left, wall_front, wall_right;
+    get_walls(&wall_left, &wall_front, &wall_right);
     
-    int sensor_left, unused, sensor_right;
-    sharpRaw(&sensor_left, &unused, &sensor_right);
-    
-    // v_dest ~ 10, sensor diff for 1cm ~ 800,
-    // so we have to use *very* small weights
-    
-    v_dest_left = 10 - (sensor_left - 800) * 0.003;
-    v_dest_right = 10 - (800 - sensor_left) * 0.003;
-    
-    ///////////////////////////////////////////////////////////////////////
-    //         inner control loop, bring v_dest to the motors            //
-    ///////////////////////////////////////////////////////////////////////
-    
-    float left = getVelocityInCountsPerSample_1();
-    float right = getVelocityInCountsPerSample_2();
-    
-    // P-part
-    float error_l = v_dest_left-left;
-    float error_r = v_dest_right-right;
-    
-    // I-part
-    acc_error_left += error_l;
-    acc_error_right += error_r;
-    
-    //D-part
-    float d_error_l = error_l - last_error_left;
-    float d_error_r = error_r - last_error_right;
-    
-    last_error_left = error_l;
-    last_error_right = error_r;
-    
-    // uses the parameters from the top of this file
-    correction_left = error_l * k_p + acc_error_left * k_i + d_error_l * k_d;
-    correction_right = error_r * k_p + acc_error_right * k_i + d_error_r * k_d;
-    
-    
-    if(MOTORL + correction_left < MOTOR_MAX)
-        MOTORL += correction_left;
-    
-    if(MOTORR + correction_right < MOTOR_MAX)
-        MOTORR += correction_right;
+    if (wall_left) {
+        if (wall_right) {
+            // both walls present
+            driveForwardAlongCorridor();
+        } else {
+            // only left wall present
+            driveForwardAlongLeftWall();
+        }
+    } else {
+        if(wall_right) {
+            // only right wall present
+            driveForwardAlongRightWall();
+        } else {
+            // no walls present
+            driveForwardBlind();
+        }
+    }
 }
 
 
@@ -338,8 +356,6 @@ void driveRightTurn(int degrees) {
     MOTORR = 0.15 * MOTOR_MAX;
 
     while (abs(getPositionInRad_2() - encoder_start) < rotation_in_rad);
-
-    brake();
 }
 
 
@@ -354,17 +370,14 @@ void driveLeftTurn(int degrees) {
 
     // calculate rad from degrees: degrees * 0.02755 = rad
     // mouse rotation to wheel rotation: *1.55
-    float rotation_in_rad = (float) degrees * 0.02755 * 1.55;
+    float rotation_in_rad = (float) degrees * 0.01745 * 0.98685488;
 
     setMotorDirections_LeftTurn();
 
-    MOTORL = vbl * MOTOR_MAX;
-    MOTORR = vbr * MOTOR_MAX;
+    MOTORL = 0.15 * MOTOR_MAX;
+    MOTORR = 0.15 * MOTOR_MAX;
 
     while (abs(getPositionInRad_2() - encoder_start) < rotation_in_rad);
-
-    brake();
-    
 }
 
 
@@ -538,6 +551,89 @@ void setMotorDirectionRight_Backward() {
 }
 
 
+/**
+ * Distance driven since the last encoder reset.
+ * 
+ * Returns the distance driven in the current motion, in encoder ticks.
+ * Used to check for completion of a motion.
+ * 
+ * @return the distance driven since the last encoder reset.
+ */
 int distanceFromEncoderReadings() {
-    // not implemented
+    return ((getPositionInCounts_1() + getPositionInCounts_2()) / 2)
+                - start_position;
+}
+
+
+/**
+ * Setter for the state of the motor control FSM.
+ * 
+ * Keeps track of the previously executed motions, and resets the controller
+ * and the driven distance where necessary. Therefore, don't set the state
+ * manually!
+ */
+void setMotionState(direction newState) {
+    
+    // Actions only necessary when changing to forward control.
+    if(newState == FRONT) {
+        if (oldState != FRONT) {
+            // If we were rotating before, reset the controller to avoid 
+            // messing up the integral part
+            resetController();
+        }
+        // always remember the original position to know when to stop
+        start_position = (getPositionInCounts_1()+getPositionInCounts_2()) / 2;
+    }
+}
+
+
+/**
+ * Function used by the motion planner to check completion of a motion.
+ * 
+ * @return 1 if completed, 0 otherwise.
+ */
+int getMotionCompleted() {
+    // length of one cell: 11.5 cm / (6 pi cm / 64*33*4 ticks) = 5154 ticks/cell
+    return distanceFromEncoderReadings() > 5154;
+}
+
+
+/**
+ * Main function of the motor control.
+ * 
+ * Implements the finite state machine, and should be called by the timer ISR.
+ * Instructions should be sent to the motor control unit by changing the state 
+ * variable using setMotionState.
+ */
+void motorFSM() {
+    
+    // Rotation functions use busy waiting - completion check for the
+    // motion planner and multiple calls during one motion are only relevant
+    // for forward control!
+    
+    switch (motionState) {
+        case FRONT:
+            // drive forward, be done.
+            driveForward();
+            break;
+        case RIGHT:
+            // first rotate, move as next step
+            driveRightTurn(90);
+            setMotionState(FRONT);
+            break;
+        case LEFT:
+            // first rotate, move as next step
+            driveLeftTurn(90);
+            setMotionState(FRONT);
+            break;
+        case BACK:
+            // first rotate, move as next step
+            driveRightTurn(180);
+            setMotionState(FRONT);
+            break;
+        case STOP:
+            // completed.
+            brake();
+            break;
+    }
 }

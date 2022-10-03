@@ -1,12 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "pathfinder.h"
-#include "pathfinder_tests.h" //REMOVE AFTER TESTING
+#include "mouse_motion.h"
+#include "IOconfig.h"
+#include "sharp.h"
+//#include "pathfinder_tests.h" //REMOVE AFTER TESTING
 
 /** internal representation of the grid as a matrix of cells */
 cell maze[SIZE][SIZE];
 
 typedef struct coord {unsigned int x; unsigned int y;} coord;
+
+// internal state
+coord position;
+orientation dir;
+plannerState current_state_planner;
 
 ///////////////////////////////////////////////////////////
 //                       DEBUG                           //
@@ -40,6 +48,50 @@ void initMaze(unsigned int x, unsigned int y, orientation dir) {
 
     // entry to the maze is not drivable.
     maze[x][y].walls[(dir+2)%4] = WALL;
+}
+
+
+/**
+ * Find the coordinates of the goal region in an explored maze.
+ * 
+ * @return the coordinates of the south-west corner goal region
+ */
+coord findGoal() {
+    for (int i = 0; i < SIZE-1; i++) {
+        for (int j = 0; j < SIZE-1; j++) {
+            // check for four connected cells
+            if (maze[i][j].walls[NORTH] == WALL 
+                    || maze[i][j].walls[EAST] == WALL
+                    || maze[i+1][j+1].walls[SOUTH] == WALL
+                    || maze[i+1][j+1].walls[WEST] == WALL) {
+                continue;
+            }
+            // check for only one entry
+            int entries = 0;
+            if (maze[i][j].walls[WEST] != WALL)
+                entries++;
+            if (maze[i][j].walls[SOUTH] != WALL)
+                entries++;
+            if (maze[i+1][j].walls[SOUTH] != WALL)
+                entries++;
+            if (maze[i+1][j].walls[EAST] != WALL)
+                entries++;
+            if (maze[i+1][j+1].walls[EAST] != WALL)
+                entries++;
+            if (maze[i+1][j+1].walls[NORTH] != WALL)
+                entries++;
+            if (maze[i][j+1].walls[NORTH] != WALL)
+                entries++;
+            if (maze[i][j+1].walls[WEST] != WALL)
+                entries++;
+            
+            if(entries != 1)
+                continue;
+            
+            return (coord) {i, j};
+        }
+    }
+    return (coord) {0, 0};
 }
 
 /**
@@ -81,8 +133,7 @@ direction explore(unsigned int x, unsigned int y, orientation dir) {
         case 0:
             // first time visiting this cell
             // retrieve and fill in new info
-            //TODO interpret sensor values to define
-            DEBUG_get_walls(&left, &front, &right);
+            get_walls(&left, &front, &right);
 
             pos->walls[(dir-1)%4] = left;
             pos->walls[dir] = front;
@@ -283,4 +334,131 @@ direction* exploit(unsigned int x, unsigned int y, orientation dir,
     printf("\n");
 
     return path;
+}
+
+
+/**
+ * Main function of the motion planner.
+ * 
+ * Implements the (inlined...) finite state machine for the motion planner
+ * and path finder. 
+ */
+void plannerFSM() {
+    
+    ////////////////////////////////////////////////////////////
+    //              1. Wait for Explore Phase                 //
+    ////////////////////////////////////////////////////////////
+    
+    // we need the button to start
+    setupSwitch();
+    
+    // value will be changed by the button ISR
+    current_state_planner = WAIT_EXPLORE;
+    while(current_state_planner == WAIT_EXPLORE);
+    
+    
+    ////////////////////////////////////////////////////////////
+    //                  2. Explore Phase                      //
+    ////////////////////////////////////////////////////////////
+    
+    // we need motors, encoders, and sensors to drive
+    setupMotors();
+    setupEncoders();
+    setupSensors();
+    
+    // initialize internal state
+    direction move = STOP;
+    position.x = 0;
+    position.y = 0;
+    dir = NORTH;
+
+    initMaze(position.x, position.y, dir);
+    
+    // loop until explore phase completed
+    do {
+
+        // plan next step. Includes collecting sensor information
+        move = explore(position.x, position.y, dir);
+        
+        // start the execution of the motion
+        setMotionState(move);
+        
+        // update internal state representation
+        dir = (dir+move)%4;
+
+        if(move != STOP) {
+            switch (dir) {
+                case NORTH:
+                    position.y++;
+                    break;
+                case EAST:
+                    position.x++;
+                    break;
+                case SOUTH:
+                    position.y--;
+                    break;
+                case WEST:
+                    position.x--;
+                    break;
+                default:
+                    break;
+            }
+        }
+        
+        // wait for completion of the motion
+        while (!getMotionCompleted());
+        
+    } while(move != STOP);
+    
+    
+    // turn back to start orientation.
+    // Uses rotation functions directly to avoid driving forward afterwards
+    switch(dir) {
+        case EAST:
+            driveLeftTurn(90);
+            break;
+        case SOUTH:
+            driveLeftTurn(180);
+            break;
+        case WEST:
+            driveLeftTurn(90);
+            break;
+        default:
+            break;
+    }
+    
+    dir = NORTH;
+    
+    
+    ////////////////////////////////////////////////////////////
+    //              3. Wait for Exploit Phase                 //
+    ////////////////////////////////////////////////////////////
+    
+    // we need the button to start
+    setupSwitch();
+    
+    // value will be changed by the button ISR
+    current_state_planner = WAIT_EXPLOIT;
+    while(current_state_planner == WAIT_EXPLOIT);
+    
+    
+    ////////////////////////////////////////////////////////////
+    //                  4. Exploit Phase                      //
+    ////////////////////////////////////////////////////////////
+    
+    // we need the motors to drive
+    setupMotors();
+    
+    // find goal location
+    coord goal = findGoal();
+    direction *path = exploit(position.x, position.y, dir, goal.x, goal.y);
+
+    // replay path
+    for(int i = 0; path[i] != STOP; i++) {
+        setMotionState(path[i]);
+        // wait for completion
+        while (!getMotionCompleted());
+    }
+
+    // COMPLETE!
 }

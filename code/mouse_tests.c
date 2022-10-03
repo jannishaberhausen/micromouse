@@ -225,35 +225,37 @@ void testMouseMotionBackAndForthInCorridor() {
         setupEncoders();
         setupSensors();
 
-        mouseState = FORWARD;
+        mouseState = FRONT;
 
         setup = 0;
     }
     
     delay ++;
     
-    if(mouseState == RIGHT_TURN && delay < 50)
-        mouseState = FORWARD;
+    if(mouseState == RIGHT && delay < 50)
+        mouseState = FRONT;
 
     switch (mouseState) {
-        case FORWARD:
+        case FRONT:
             driveForward();
 
             int left, right, front;
             sharpRaw(&left, &front, &right);
             if(checkForWallAhead(front)){
-                mouseState = BRAKE;
+                mouseState = STOP;
             }
             break;
             
-        case BRAKE:
+        case STOP:
             brake();
-            mouseState = RIGHT_TURN;
+            mouseState = RIGHT;
             break;
             
-        case RIGHT_TURN:
+        case RIGHT:
             driveRightTurn(180);
-            mouseState = FORWARD;
+            mouseState = FRONT;
+            break;
+        default:
             break;
     }
 }
@@ -320,7 +322,7 @@ void testMouseAlwaysFollowRightWall() {
         setupEncoders();
         setupSensors();
 
-        mouseState = FORWARD;
+        mouseState = FRONT;
 
         setup = 0;
     }
@@ -332,7 +334,7 @@ void testMouseAlwaysFollowRightWall() {
     float rotation;
 
     switch (mouseState) {
-        case FORWARD:
+        case FRONT:
             // set motor directions. both forward
             MOTINL1 = 1;
             MOTINL2 = 0;
@@ -350,19 +352,19 @@ void testMouseAlwaysFollowRightWall() {
             MOTORR = 0.04 * MOTOR_MAX - update;
 
             if (front > desired_distance_to_front_wall) {
-                mouseState = BRAKE;
+                mouseState = STOP;
             }
 
             break;
 
-        case BRAKE:
+        case STOP:
             /*
             if(abs(front - desired_distance_to_front_wall) <= distance_to_front_wall_threshold) {
                 // stop motors
                 MOTORL = 0;
                 MOTORR = 0;
                 
-                mouseState = RIGHT_TURN;
+                mouseState = RIGHT;
             }
             
             // define error as distance from desired wall distance
@@ -388,11 +390,11 @@ void testMouseAlwaysFollowRightWall() {
             MOTORL = 0;
             MOTORR = 0;
 
-            mouseState = RIGHT_TURN;
+            mouseState = RIGHT;
 
             break;
 
-        case RIGHT_TURN:
+        case RIGHT:
             encoder_start = getPositionInRad_2();
 
             // calculate rad from degrees: degrees * 0.02755 = rad
@@ -412,8 +414,10 @@ void testMouseAlwaysFollowRightWall() {
             MOTORL = 0;
             MOTORR = 0;
 
-            mouseState = FORWARD;
+            mouseState = FRONT;
 
+            break;
+        default:
             break;
     }
 }

@@ -39,7 +39,6 @@ typedef struct cell cell;
 enum orientation {
     NORTH=0, EAST=1, SOUTH=2, WEST=3
 };
-
 typedef enum orientation orientation;
 
 /**
@@ -48,13 +47,22 @@ typedef enum orientation orientation;
 enum direction {
     FRONT=0, RIGHT=1, BACK=2, LEFT=3, STOP=4
 };
-
 typedef enum direction direction;
+
+
+enum plannerState {
+    WAIT_EXPLORE, EXPLORE, WAIT_EXPLOIT, EXPLOIT
+};
+typedef enum plannerState plannerState;
+
+extern plannerState current_state_planner;
 
 void initMaze(unsigned int x, unsigned int y, orientation dir);
 direction explore(unsigned int x, unsigned int y, orientation dir);
 direction* exploit(unsigned int x, unsigned int y, orientation dir,
                    unsigned int x_dest, unsigned int y_dest);
+
+void plannerFSM();
 
 cell** DEBUG_get_maze();
 
