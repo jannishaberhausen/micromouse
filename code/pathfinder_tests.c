@@ -230,7 +230,7 @@ void DEBUG_get_walls(int *left, int *front, int *right) {
  * 
  * @return 1 if completed, 0 otherwise
  */
-int DEBUG_get_completed() {
+int DEBUG_getMotionCompleted() {
     debug_delay --;
     if(debug_delay == 0) {
         debug_delay = 100;
@@ -244,7 +244,7 @@ int DEBUG_get_completed() {
  * 
  * To be implemented by setting the mouseState.
  */
-void DEBUG_set_state(direction newState) {
+void DEBUG_setMotionState(direction newState) {
     debug_delay = 100;
     //mouseState = newState;
 }
@@ -349,70 +349,16 @@ void DEBUG_setup_maze() {
 
 }
 
-int test_main() {
-
-    DEBUG_setup_maze();
-
-    x = 0;
-    y = 0;
-    test_dir = EAST;
-    direction move;
-
-
-    initMaze(x, y, test_dir);
-    prettyPrintMaze(env);
-    printf("\n");
-
-    do {
-        move = explore(x, y, test_dir);
-        test_dir = (test_dir+move)%4;
-        printMaze(DEBUG_get_maze());
-
-        if(move != STOP) {
-            switch (test_dir) {
-                case NORTH:
-                    y++;
-                    break;
-                case EAST:
-                    x++;
-                    break;
-                case SOUTH:
-                    y--;
-                    break;
-                case WEST:
-                    x--;
-                    break;
-                default:
-                    break;
-            }
-        }
-        printf("go to %d, %d\n\n", x, y);
-    } while (move != STOP);
-
-    prettyPrintMaze(DEBUG_get_maze());
-
-    direction *path = exploit(x, y, EAST, 2, 0);
-
-    printf("Final path: ");
-    for(int i = 0;; i++) {
-        printf("%d, ", path[i]);
-        if(path[i] == STOP) {
-            printf("\n");
-            break;
-        }
-    }
-
-    return 0;
-}
-
 
 /**
  * Concept of the DFA for the motion plnner.
  */
-int testAutomaton_main() {
+int test_main() {
 
     // setup test environment
     DEBUG_setup_maze();
+    // print the test environment
+    prettyPrintMaze(env);
     
     ////////////////////////////////////////////////////////////
     //              1. Wait for Explore Phase                 //
@@ -439,18 +385,17 @@ int testAutomaton_main() {
         // plan next step. Includes collecting sensor information
         move = explore(x, y, test_dir);
         
-        
         // execute the movement
         /// 1. turn if necessary
         if(move != FRONT) {
-            DEBUG_set_state(move);
+            DEBUG_setMotionState(move);
             // wait for completion
-            while (DEBUG_get_completed() == 0);
+            while (DEBUG_getMotionCompleted() == 0);
         }
         /// 2. move forward
-        DEBUG_set_state(FRONT);
+        DEBUG_setMotionState(FRONT);
         // wait for completion
-        while (DEBUG_get_completed() == 0);
+        while (DEBUG_getMotionCompleted() == 0);
         
         
         // update internal state representation
@@ -474,9 +419,16 @@ int testAutomaton_main() {
                     break;
             }
         }
+        
+        
+        // print the updated map, and the next action
+        printMaze(DEBUG_get_maze());
+        printf("Moving in direction %d, to cell %d, %d, facing %d\n", move, x, y, test_dir);
+        
     } while(move != STOP);
     
     //TODO: turn back to start orientation
+    test_dir = NORTH;
     
     
     ////////////////////////////////////////////////////////////
@@ -495,13 +447,14 @@ int testAutomaton_main() {
     ////////////////////////////////////////////////////////////
     
     // plan path
-    direction *path = exploit(x, y, EAST, 2, 0);
+    direction *path = exploit(x, y, test_dir, 2, 0);
 
     // replay path
+    printf("Directions to goal:\n");
     for(int i = 0; path[i] != STOP; i++) {
-        DEBUG_set_state(path[i]);
+        DEBUG_setMotionState(path[i]);
         // wait for completion
-        while (DEBUG_get_completed() == 0);
+        while (DEBUG_getMotionCompleted() == 0);
         printf("%d", path[i]);
 
     }

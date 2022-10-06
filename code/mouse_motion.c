@@ -593,8 +593,11 @@ void setMotionState(direction newState) {
  * @return 1 if completed, 0 otherwise.
  */
 int getMotionCompleted() {
-    // length of one cell: 11.5 cm / (6 pi cm / 64*33*4 ticks) = 5154 ticks/cell
-    return distanceFromEncoderReadings() > 5154;
+    if (motionState == FRONT)
+        // length of one cell: 11.5 cm / (6 pi cm / 64*33*4 ticks) = 5154 ticks/cell
+        return distanceFromEncoderReadings() > 5154;
+    
+    return 1;
 }
 
 

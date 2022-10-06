@@ -135,9 +135,33 @@ direction explore(unsigned int x, unsigned int y, orientation dir) {
             // retrieve and fill in new info
             get_walls(&left, &front, &right);
 
-            pos->walls[(dir-1)%4] = left;
-            pos->walls[dir] = front;
-            pos->walls[(dir+1)%4] = right;
+            // only update unknown walls
+            if(pos->walls[(dir-1)%4] == UNKNOWN)
+                pos->walls[(dir-1)%4] = left;
+            if(pos->walls[dir] == UNKNOWN)
+                pos->walls[dir] = front;
+            if(pos->walls[(dir+1)%4] == UNKNOWN)
+                pos->walls[(dir+1)%4] = right;
+            
+            // in case there are unexplored walls in neighboring cells
+            // that have already been visited, update them as well.
+            // See the test maze, west wall of cell (1, 1) when exploring (0, 2)
+            if (x > 0 && (&maze[x-1][y])->walls[EAST] == WAY) {
+                (&maze[x-1][y])->walls[EAST] = EXPLORED;
+                pos->walls[WEST] = EXPLORED;
+            }
+            if (x < SIZE-1 && (&maze[x+1][y])->walls[WEST] == WAY) {
+                (&maze[x+1][y])->walls[WEST] = EXPLORED;
+                pos->walls[EAST] = EXPLORED;
+            }
+            if (y > 0 && (&maze[x][y-1])->walls[NORTH] == WAY) {
+                (&maze[x][y-1])->walls[NORTH] = EXPLORED;
+                pos->walls[SOUTH] = EXPLORED;
+            }
+            if (y < SIZE-1 && (&maze[x][y+1])->walls[SOUTH] == WAY) {
+                (&maze[x][y+1])->walls[SOUTH] = EXPLORED;
+                pos->walls[NORTH] = EXPLORED;
+            }
 
             // Set entrance. Special case in the start cell
             if(pos->walls[(dir+2)%4] != WALL)
@@ -163,8 +187,6 @@ direction explore(unsigned int x, unsigned int y, orientation dir) {
             // walk back (no break!)
         case 2:
             // cell fully explored, walk back to where we came from
-
-            //TODO check for goal area
 
             for (next = 0; next < 4; next++) {
                 if (pos->walls[next] == ENTRY) {
@@ -421,7 +443,7 @@ void plannerFSM() {
             driveLeftTurn(180);
             break;
         case WEST:
-            driveLeftTurn(90);
+            driveRightTurn(90);
             break;
         default:
             break;
@@ -459,6 +481,7 @@ void plannerFSM() {
         // wait for completion
         while (!getMotionCompleted());
     }
+    setMotionState(STOP);
 
     // COMPLETE!
 }
