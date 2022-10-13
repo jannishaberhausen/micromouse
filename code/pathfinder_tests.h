@@ -8,6 +8,8 @@ extern "C" {
 
     void printMaze(cell maze[SIZE][SIZE]);
     void prettyPrintMaze(cell maze[SIZE][SIZE]);
+    
+    void testMotionSequence();
 
 #ifdef	__cplusplus
 }

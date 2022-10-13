@@ -472,8 +472,8 @@ void plannerFSM() {
     setupMotors();
     
     // find goal location
-    coord goal = findGoal();
-    direction *path = exploit(position.x, position.y, dir, goal.x, goal.y);
+    //coord goal = findGoal();
+    direction *path = exploit(position.x, position.y, dir, 2, 0);//goal.x, goal.y);
 
     // replay path
     for(int i = 0; path[i] != STOP; i++) {

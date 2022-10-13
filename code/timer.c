@@ -3,8 +3,9 @@
 
 #include "timer.h"
 #include "IOconfig.h"
-#include "hw_tests.h"
-#include "mouse_tests.h"
+//#include "hw_tests.h"
+//#include "mouse_tests.h"
+#include "mouse_motion.h"
 
 /**
  * set up TIMER1
@@ -105,4 +106,5 @@ void __attribute__((__interrupt__, auto_psv)) _T1Interrupt(void)
     //testRotation();
     testMouseSmoothRightTurn();
     testMouseSmoothLeftTurn();
+    motionFSM();
 }
