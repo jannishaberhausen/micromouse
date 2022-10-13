@@ -254,6 +254,7 @@ void testMouseMotionBackAndForthInCorridor() {
         case RIGHT:
             driveRightTurn(180);
             mouseState = FRONT;
+            //resetController();
             break;
         default:
             break;

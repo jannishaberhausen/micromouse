@@ -101,8 +101,8 @@ int main()
      */
     startTimer();
     
-    //plannerFSM();
-    testMotionSequence();
+    plannerFSM();
+    //testMotionSequence();
     while(1)
     {
         

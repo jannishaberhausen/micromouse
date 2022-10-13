@@ -1,3 +1,4 @@
+#include "xc.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include "pathfinder.h"
@@ -432,6 +433,9 @@ void plannerFSM() {
         
     } while(move != STOP);
     
+    LED2 = LEDOFF;
+    LED4 = LEDOFF;
+    setMotionState(EMPTY);
     
     // turn back to start orientation.
     // Uses rotation functions directly to avoid driving forward afterwards
@@ -458,16 +462,21 @@ void plannerFSM() {
     
     // we need the button to start
     setupSwitch();
+    LED2 = LEDON;
+    LED4 = LEDON;
+    
     
     // value will be changed by the button ISR
     current_state_planner = WAIT_EXPLOIT;
     while(current_state_planner == WAIT_EXPLOIT);
-    
+    LED2 = LEDON;
+    LED4 = LEDOFF;
     
     ////////////////////////////////////////////////////////////
     //                  4. Exploit Phase                      //
     ////////////////////////////////////////////////////////////
     
+    /*
     // we need the motors to drive
     setupMotors();
     
@@ -484,4 +493,5 @@ void plannerFSM() {
     setMotionState(STOP);
 
     // COMPLETE!
+    */
 }

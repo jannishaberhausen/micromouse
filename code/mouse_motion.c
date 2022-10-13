@@ -26,7 +26,7 @@
 
 // control parameters
 float k_p = 150;
-float k_i = 2;
+float k_i = 0;
 float k_d = 0;
 
 
@@ -120,15 +120,15 @@ void controlFixedSpeed(float v_l, float v_r) {
     acc_error_right += error_r;
     
     //D-part
-    float d_error_l = error_l - last_error_left;
-    float d_error_r = error_r - last_error_right;
+    // float d_error_l = error_l - last_error_left;
+    // float d_error_r = error_r - last_error_right;
     
     last_error_left = error_l;
     last_error_right = error_r;
     
     // uses the parameters from the top of this file
-    correction_left = error_l * k_p + acc_error_left * k_i + d_error_l * k_d;
-    correction_right = error_r * k_p + acc_error_right * k_i + d_error_r * k_d;
+    correction_left = error_l * k_p + acc_error_left * k_i; // + d_error_l * k_d;
+    correction_right = error_r * k_p + acc_error_right * k_i; // + d_error_r * k_d;
     
     
     if(BASE_SPEED + correction_left < MOTOR_MAX)
@@ -427,6 +427,9 @@ void driveSmoothLeftTurn(int degrees) {
  * function when the remaining wheel speed is below a threshold
  */
 void brake() {
+    MOTORL = 0;
+    MOTORR = 0;
+    /*
     // define errors as remaining velocity in the wheels
     int error_left = getVelocityInCountsPerSample_1();
     int error_right = getVelocityInCountsPerSample_2();
@@ -455,6 +458,7 @@ void brake() {
     // update motor speeds based on error readings
     MOTORL += kp * error_left;
     MOTORR -= kp * error_right;
+    */
 }
 
 
@@ -628,7 +632,10 @@ void setMotionState(direction newState) {
 int getMotionCompleted() {
     if (motionState == FRONT)
         // length of one cell: 16.5 cm / (6 pi cm / 16*33*4 ticks) = 1849 ticks/cell
-        return distanceFromEncoderReadings() > 1849;
+        return distanceFromEncoderReadings() > 2000;
+    
+    if (motionState == STOP)
+        return 1;
     
     return 1;
 }
@@ -654,43 +661,33 @@ void motionFSM() {
     switch (motionState) {
         case FRONT:
             // drive forward, be done.
-            LED2 = LEDON;
-            LED4 = LEDON;
             driveForward();
             break;
         case RIGHT:
             // first rotate, move as next step
-            LED2 = LEDON;
-            LED4 = LEDOFF;
             driveRightTurn(90);
             resetController();
             setMotionState(FRONT);
             break;
         case LEFT:
             // first rotate, move as next step
-            LED2 = LEDOFF;
-            LED4 = LEDON;
             driveLeftTurn(90);
             resetController();
             setMotionState(FRONT);
             break;
         case BACK:
             // first rotate, move as next step
-            LED2 = LEDOFF;
-            LED4 = LEDOFF;
             driveRightTurn(180);
             resetController();
             setMotionState(FRONT);
             break;
         case STOP:
             // completed.
-            LED2 = LEDOFF;
-            LED4 = LEDOFF;
             brake();
             break;
+        case EMPTY:
+            break;
         default:
-            LED2 = !LED2;
-            LED4 = !LED4;
             break;
     }
 }

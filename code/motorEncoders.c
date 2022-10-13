@@ -24,9 +24,9 @@ void initQEI1( unsigned int  startPos)
     QEI1CONbits.TQCS = 0; // internal clock source (Tcy))
     QEI1CONbits.UPDN_SRC = 0; // direction of position counter determined using internal logic
 
-    MAXCNT = 0xffff;
+    MAX1CNT = 0xffff;
   
-    POSCNT =  startPos;
+    POS1CNT =  startPos;
     rotationCount1=0;
 
     IFS3bits.QEI1IF = 0; // clear interrupt flag
