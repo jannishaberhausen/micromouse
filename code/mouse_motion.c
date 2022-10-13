@@ -59,9 +59,6 @@ int start_position = 0;
 // state variable for the motor control FSM
 direction motionState;
 
-// motionState before the last command, so we know when to reset what
-direction oldState;
-
 
 /**
  * Reset the encoders and all error terms.
@@ -250,8 +247,8 @@ void driveForwardAlongLeftWall() {
     
     // (senosr_left - sensor_right) = (sensor_left - (1000-sensor_left))
     // = (2*sensor_left - 1000)
-    v_dest_left = 10 + (2*sensor_left - 1000) * 0.003;
-    v_dest_right = 10 + (1000 - 2*sensor_left) * 0.003;
+    v_dest_left = 10 + (sensor_left - 1000) * 0.003;
+    v_dest_right = 10 + (1000 - sensor_left) * 0.003;
     
     
     ///////////////////////////////////////////////////////////////////////
@@ -285,8 +282,8 @@ void driveForwardAlongRightWall() {
     
     // (senosr_left - sensor_right) = (sensor_left - (1000-sensor_left))
     // = (2*sensor_left - 1000)
-    v_dest_left = 10 + (1000 - 2*sensor_right) * 0.003;
-    v_dest_right = 10 + (2*sensor_right - 1000) * 0.003;
+    v_dest_left = 10 + (1000 - sensor_right) * 0.003;
+    v_dest_right = 10 + (sensor_right - 1000) * 0.003;
     
     
     ///////////////////////////////////////////////////////////////////////
@@ -306,7 +303,6 @@ void driveForwardAlongRightWall() {
  * appropriate driveForward* function.
  */
 void driveForward() {
-    
     setMotorDirections_Forward();
     
     // decide which controller to use
@@ -341,8 +337,6 @@ void driveForward() {
  */
 void driveRightTurn(int degrees) {
     delay = 0;
-
-    setMotorDirections_RightTurn();
     
     float encoder_start = getPositionInRad_2();
 
@@ -366,6 +360,8 @@ void driveRightTurn(int degrees) {
  *      degrees (int): size of turning angle 
  */
 void driveLeftTurn(int degrees) {
+    delay = 0;
+    
     float encoder_start = getPositionInRad_2();
 
     // calculate rad from degrees: degrees * 0.02755 = rad
@@ -576,7 +572,7 @@ void setMotionState(direction newState) {
     
     // Actions only necessary when changing to forward control.
     if(newState == FRONT) {
-        if (oldState != FRONT) {
+        if (motionState != FRONT) {
             // If we were rotating before, reset the controller to avoid 
             // messing up the integral part
             resetController();
@@ -584,6 +580,7 @@ void setMotionState(direction newState) {
         // always remember the original position to know when to stop
         start_position = (getPositionInCounts_1()+getPositionInCounts_2()) / 2;
     }
+    motionState = newState;
 }
 
 
@@ -594,10 +591,10 @@ void setMotionState(direction newState) {
  */
 int getMotionCompleted() {
     if (motionState == FRONT)
-        // length of one cell: 11.5 cm / (6 pi cm / 64*33*4 ticks) = 5154 ticks/cell
-        return distanceFromEncoderReadings() > 5154;
+        // length of one cell: 16.5 cm / (6 pi cm / 16*33*4 ticks) = 1849 ticks/cell
+        return distanceFromEncoderReadings() > 1849;
     
-    return 1;
+    return 0;
 }
 
 
@@ -609,7 +606,10 @@ int getMotionCompleted() {
  * variable using setMotionState.
  */
 void motionFSM() {
-    LED2 = !LED2;
+    delay ++;
+    if(delay < 50 && (motionState == LEFT || motionState == RIGHT)) {
+        //setMotionState(FRONT);
+    }
     
     // Rotation functions use busy waiting - completion check for the
     // motion planner and multiple calls during one motion are only relevant
@@ -618,26 +618,28 @@ void motionFSM() {
     switch (motionState) {
         case FRONT:
             // drive forward, be done.
-            driveForward();
             LED2 = LEDON;
             LED4 = LEDON;
+            driveForward();
             break;
         case RIGHT:
             // first rotate, move as next step
-            driveRightTurn(90);
-            setMotionState(FRONT);
             LED2 = LEDON;
             LED4 = LEDOFF;
+            driveRightTurn(90);
+            setMotionState(FRONT);
             break;
         case LEFT:
             // first rotate, move as next step
-            driveLeftTurn(90);
-            setMotionState(FRONT);
             LED2 = LEDOFF;
             LED4 = LEDON;
+            driveLeftTurn(90);
+            setMotionState(FRONT);
             break;
         case BACK:
             // first rotate, move as next step
+            LED2 = LEDOFF;
+            LED4 = LEDOFF;
             driveRightTurn(180);
             setMotionState(FRONT);
             break;

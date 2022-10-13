@@ -1,5 +1,6 @@
 #include "pathfinder.h"
 //#include "hw_tests.h"
+#include "IOconfig.h"
 #include "pathfinder_tests.h"
 #include "mouse_motion.h"
 #include <stdio.h>
@@ -467,10 +468,19 @@ int test_main() {
 
 
 void testMotionSequence() {
-    direction path[] = {RIGHT, LEFT, RIGHT, LEFT, RIGHT, RIGHT, FRONT, RIGHT, STOP};
+    
+    direction path[] = {FRONT, STOP};
     for(int i = 0; path[i] != STOP; i++) {
         setMotionState(path[i]);
         // wait for completion
-        while (getMotionCompleted() == 0);
+        while (!getMotionCompleted());
     }
+     
+    //setMotionState(RIGHT);
+    //while (getMotionCompleted() == 0);
+    setMotionState(STOP);
+    
+    
+    //driveRightTurn(90);
+    //driveForward();
 }

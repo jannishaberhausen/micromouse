@@ -24,6 +24,7 @@ extern "C" {
     void testEncoders();
     void testSensorsLR();
     void testSensorsF();
+    void testSensorsLRWalls();
 
 #ifdef	__cplusplus
 }

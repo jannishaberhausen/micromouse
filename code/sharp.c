@@ -157,8 +157,10 @@ void get_walls(int *left, int *front, int *right)
     r /= BUF_LEN;
     f /= BUF_LEN;
     
+    int limit = 650;
+    
     //output values 
-    *left = l < 217 ? 0 : 1;
-    *right = r < 217 ? 0 : 1;
-    *front = f < 217 ? 0 : 1;
+    *left = SHARP_L < limit ? 0 : 1;
+    *right = SHARP_R < limit ? 0 : 1;
+    *front = SHARP_F < limit ? 0 : 1;
 }

@@ -192,6 +192,38 @@ void testSensorsLR() {
 }
 
 
+
+/**
+ * Tests the sharp distance sensors.
+ * 
+ * Sets the brightness / DC of LED2/4 proportional to the 
+ * distance read from the right / left sensors.
+ * 
+ * Tests the sensors (raw output, no distance measures!), as well as 
+ * the ADC and DMA units required to read them.
+ * The front sensor is read as well, but displayed only in the next 
+ * test case, as the other LEDs are connected to the hbridge.
+ */
+void testSensorsLRWalls() {
+    if(setup == 1) {
+        setupLED24();
+        setupSensors();
+        //initOutput();
+        setup = 0;
+    
+        //int left, right, front;
+        //sharpRaw(&left, &front, &right);
+        //putBinary(left);
+    }
+    
+    int left, right, front;
+    get_walls(&left, &front, &right);
+
+    LED2 = right;
+    LED4 = left;
+}
+
+
 /**
  * Tests the sharp distance sensors.
  * 

@@ -46,6 +46,7 @@
 #include "dma.h"
 #include "pathfinder.h"
 #include "pathfinder_tests.h"
+#include "mouse_motion.h"
 
 
 int main() 
@@ -86,6 +87,13 @@ int main()
      * Test cases are implemented in the timer ISR. More details in timer.c
      */
     initTimer(10000);
+    
+    setupLED24();
+    
+    setupMotors();
+    setupSensors();
+    setupEncoders();
+    resetController();
     
     // start the timer.
     /*
