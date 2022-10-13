@@ -21,6 +21,8 @@ extern "C" {
     void driveForward();
     void driveRightTurn(int degrees);
     void driveLeftTurn(int degrees);
+    void driveSmoothRightTurn(int degrees);
+    void driveSmoothLeftTurn(int degrees);
     void brake();
 
     // State Transition Checks 

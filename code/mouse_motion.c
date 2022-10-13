@@ -377,6 +377,50 @@ void driveLeftTurn(int degrees) {
 }
 
 
+void driveSmoothRightTurn(int degrees) {
+    delay = 0;
+    
+    float encoder_start = getPositionInRad_2();
+
+    // calculate rad from degrees: degrees * 0.02755 = rad
+    // mouse rotation to wheel rotation: *1.55
+    float rotation_in_rad = (float) degrees * 0.01745 * 0.98685488;
+
+    setMotorDirections_Forward();
+
+    // ratio v_left_wheel to v_right_wheel: 3.52 to 1
+    MOTORL = 0.1 * 3.52 * MOTOR_MAX;
+    MOTORR = 0.1 * MOTOR_MAX;
+
+    while (abs(getPositionInRad_2() - encoder_start) < rotation_in_rad);
+    
+    MOTORL = 0;
+    MOTORR = 0;
+}
+
+
+void driveSmoothLeftTurn(int degrees) {
+    delay = 0;
+    
+    float encoder_start = getPositionInRad_2();
+
+    // calculate rad from degrees: degrees * 0.02755 = rad
+    // mouse rotation to wheel rotation: *1.55
+    float rotation_in_rad = (float) degrees * 0.01745 * 0.98685488;
+
+    setMotorDirections_Forward();
+
+    // ratio v_left_wheel to v_right_wheel: 1 to 3.52
+    MOTORL = 0.1 * MOTOR_MAX;
+    MOTORR = 0.1 * 3.52 * MOTOR_MAX;
+
+    while (abs(getPositionInRad_2() - encoder_start) < rotation_in_rad);
+    
+    MOTORL = 0;
+    MOTORR = 0;
+}
+
+
 /**
  * Slows the mouse down quickly by turning the motors backward. This results in 
  * a faster stop as compared to letting the wheels spin freely. Exit the 

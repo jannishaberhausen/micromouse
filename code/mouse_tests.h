@@ -27,7 +27,8 @@ extern "C" {
     void testMouseStopBeforeWall();
     void testMouseOnlyRelyOnOneSensor();
     void testMouseAlwaysFollowRightWall();
-    
+    void testMouseSmoothRightTurn();
+    void testMouseSmoothLeftTurn();
     
     void testRightTurn(int degrees);
     void motorBreak();

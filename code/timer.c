@@ -104,5 +104,7 @@ void __attribute__((__interrupt__, auto_psv)) _T1Interrupt(void)
     //testRightTurn(360);
     //testStraightCorridor();
     //testRotation();
+    testMouseSmoothRightTurn();
+    testMouseSmoothLeftTurn();
     motionFSM();
 }
