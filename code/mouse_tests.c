@@ -272,7 +272,7 @@ void testMouseSmoothRightTurn(){
 }
 
 
-void testMouseSmoothRightTurn(){
+void testMouseSmoothLeftTurn(){
     if (setup == 1) {
         setupMotors();
         setupEncoders();

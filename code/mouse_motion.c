@@ -212,8 +212,8 @@ void driveForwardAlongCorridor() {
     // v_dest ~ 10, sensor diff for 1cm ~ 800,
     // so we have to use *very* small weights
     
-    v_dest_left = 10 + (sensor_left - sensor_right) * 0.003;
-    v_dest_right = 10 + (sensor_right - sensor_left) * 0.003;
+    v_dest_left = BASE_SPEED + (sensor_left - sensor_right) * 0.003;
+    v_dest_right = BASE_SPEED + (sensor_right - sensor_left) * 0.003;
     
     
     ///////////////////////////////////////////////////////////////////////
@@ -247,8 +247,8 @@ void driveForwardAlongLeftWall() {
     
     // (senosr_left - sensor_right) = (sensor_left - (1000-sensor_left))
     // = (2*sensor_left - 1000)
-    v_dest_left = 10 + (sensor_left - 1000) * 0.003;
-    v_dest_right = 10 + (1000 - sensor_left) * 0.003;
+    v_dest_left = BASE_SPEED + (sensor_left - 1000) * 0.003;
+    v_dest_right = BASE_SPEED + (1000 - sensor_left) * 0.003;
     
     
     ///////////////////////////////////////////////////////////////////////
@@ -282,8 +282,8 @@ void driveForwardAlongRightWall() {
     
     // (senosr_left - sensor_right) = (sensor_left - (1000-sensor_left))
     // = (2*sensor_left - 1000)
-    v_dest_left = 10 + (1000 - sensor_right) * 0.003;
-    v_dest_right = 10 + (sensor_right - 1000) * 0.003;
+    v_dest_left = BASE_SPEED + (1000 - sensor_right) * 0.003;
+    v_dest_right = BASE_SPEED + (sensor_right - 1000) * 0.003;
     
     
     ///////////////////////////////////////////////////////////////////////
@@ -346,8 +346,8 @@ void driveRightTurn(int degrees) {
 
     setMotorDirections_RightTurn();
 
-    MOTORL = 0.15 * MOTOR_MAX;
-    MOTORR = 0.15 * MOTOR_MAX;
+    MOTORL = 0.1 * MOTOR_MAX;
+    MOTORR = 0.1 * MOTOR_MAX;
 
     while (abs(getPositionInRad_2() - encoder_start) < rotation_in_rad);
 }
@@ -370,8 +370,8 @@ void driveLeftTurn(int degrees) {
 
     setMotorDirections_LeftTurn();
 
-    MOTORL = 0.15 * MOTOR_MAX;
-    MOTORR = 0.15 * MOTOR_MAX;
+    MOTORL = 0.1 * MOTOR_MAX;
+    MOTORR = 0.1 * MOTOR_MAX;
 
     while (abs(getPositionInRad_2() - encoder_start) < rotation_in_rad);
 }
@@ -614,16 +614,8 @@ int distanceFromEncoderReadings() {
  */
 void setMotionState(direction newState) {
     
-    // Actions only necessary when changing to forward control.
-    if(newState == FRONT) {
-        if (motionState != FRONT) {
-            // If we were rotating before, reset the controller to avoid 
-            // messing up the integral part
-            resetController();
-        }
-        // always remember the original position to know when to stop
-        start_position = (getPositionInCounts_1()+getPositionInCounts_2()) / 2;
-    }
+    // always remember the original position to know when to stop
+    start_position = (getPositionInCounts_1()+getPositionInCounts_2()) / 2;
     motionState = newState;
 }
 
@@ -638,7 +630,7 @@ int getMotionCompleted() {
         // length of one cell: 16.5 cm / (6 pi cm / 16*33*4 ticks) = 1849 ticks/cell
         return distanceFromEncoderReadings() > 1849;
     
-    return 0;
+    return 1;
 }
 
 
@@ -671,6 +663,7 @@ void motionFSM() {
             LED2 = LEDON;
             LED4 = LEDOFF;
             driveRightTurn(90);
+            resetController();
             setMotionState(FRONT);
             break;
         case LEFT:
@@ -678,6 +671,7 @@ void motionFSM() {
             LED2 = LEDOFF;
             LED4 = LEDON;
             driveLeftTurn(90);
+            resetController();
             setMotionState(FRONT);
             break;
         case BACK:
@@ -685,6 +679,7 @@ void motionFSM() {
             LED2 = LEDOFF;
             LED4 = LEDOFF;
             driveRightTurn(180);
+            resetController();
             setMotionState(FRONT);
             break;
         case STOP:
@@ -694,7 +689,8 @@ void motionFSM() {
             brake();
             break;
         default:
-            LED2 = LEDOFF;
-            LED4 = LEDOFF;
+            LED2 = !LED2;
+            LED4 = !LED4;
+            break;
     }
 }
