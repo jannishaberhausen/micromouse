@@ -1,6 +1,7 @@
 #include "pathfinder.h"
 //#include "hw_tests.h"
 #include "pathfinder_tests.h"
+#include "mouse_motion.h"
 #include <stdio.h>
 
 cell env[SIZE][SIZE];
@@ -462,4 +463,14 @@ int test_main() {
     // COMPLETE!
     
     return 0;
+}
+
+
+void testMotionSequence() {
+    direction path[] = {RIGHT, LEFT, RIGHT, LEFT, RIGHT, RIGHT, FRONT, RIGHT, STOP};
+    for(int i = 0; path[i] != STOP; i++) {
+        setMotionState(path[i]);
+        // wait for completion
+        while (getMotionCompleted() == 0);
+    }
 }

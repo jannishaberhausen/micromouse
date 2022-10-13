@@ -44,6 +44,8 @@
 #include "pwm.h"
 #include "adc.h"
 #include "dma.h"
+#include "pathfinder.h"
+#include "pathfinder_tests.h"
 
 
 int main() 
@@ -91,7 +93,8 @@ int main()
      */
     startTimer();
     
-    
+    //plannerFSM();
+    testMotionSequence();
     while(1)
     {
         

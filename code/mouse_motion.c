@@ -608,7 +608,8 @@ int getMotionCompleted() {
  * Instructions should be sent to the motor control unit by changing the state 
  * variable using setMotionState.
  */
-void motorFSM() {
+void motionFSM() {
+    LED2 = !LED2;
     
     // Rotation functions use busy waiting - completion check for the
     // motion planner and multiple calls during one motion are only relevant
@@ -618,16 +619,22 @@ void motorFSM() {
         case FRONT:
             // drive forward, be done.
             driveForward();
+            LED2 = LEDON;
+            LED4 = LEDON;
             break;
         case RIGHT:
             // first rotate, move as next step
             driveRightTurn(90);
             setMotionState(FRONT);
+            LED2 = LEDON;
+            LED4 = LEDOFF;
             break;
         case LEFT:
             // first rotate, move as next step
             driveLeftTurn(90);
             setMotionState(FRONT);
+            LED2 = LEDOFF;
+            LED4 = LEDON;
             break;
         case BACK:
             // first rotate, move as next step
@@ -636,7 +643,12 @@ void motorFSM() {
             break;
         case STOP:
             // completed.
+            LED2 = LEDOFF;
+            LED4 = LEDOFF;
             brake();
             break;
+        default:
+            LED2 = LEDOFF;
+            LED4 = LEDOFF;
     }
 }
