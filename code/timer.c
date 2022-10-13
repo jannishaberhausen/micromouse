@@ -96,11 +96,13 @@ void __attribute__((__interrupt__, auto_psv)) _T1Interrupt(void)
     //testRotation();
     //testMouse180DegreesRotation();
     //testMouseMotionAlongCorridor();
-    testMouseMotionBackAndForthInCorridor();
+    //testMouseMotionBackAndForthInCorridor();
     //testMouseStopBeforeWall();
     //testMouseOnlyRelyOnOneSensor();
     //testMouseAlwaysFollowRightWall();
     //testRightTurn(360);
     //testStraightCorridor();
     //testRotation();
+    testMouseSmoothRightTurn();
+    testMouseSmoothLeftTurn();
 }

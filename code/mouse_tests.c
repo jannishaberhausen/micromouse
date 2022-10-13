@@ -260,6 +260,29 @@ void testMouseMotionBackAndForthInCorridor() {
     }
 }
 
+
+void testMouseSmoothRightTurn(){
+    if (setup == 1) {
+        setupMotors();
+        setupEncoders();
+
+        driveSmoothRightTurn(90); 
+        setup = 0;
+    }   
+}
+
+
+void testMouseSmoothRightTurn(){
+    if (setup == 1) {
+        setupMotors();
+        setupEncoders();
+
+        driveSmoothLeftTurn(90); 
+        setup = 0;
+    }   
+}
+
+
 /* #############################################################################
  * ######## HAVE NOT CHANGED FUNCTIONs BELOW TO MATCH THE NEW FORMAT ###########
  * ###########################################################################*/
