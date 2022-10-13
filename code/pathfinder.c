@@ -345,7 +345,7 @@ direction* exploit(unsigned int x, unsigned int y, orientation dir,
     }
 
     if(pos.x != x || pos.y != y) {
-        printf("ERROR start position mismatch\n");
+        //printf("ERROR start position mismatch\n");
     }
 
     //convert orientation to direction
@@ -354,7 +354,7 @@ direction* exploit(unsigned int x, unsigned int y, orientation dir,
         path[i] = (path[i] - dir)%4;
         dir = tmp;
     }
-    printf("\n");
+    //printf("\n");
 
     return path;
 }
@@ -388,6 +388,7 @@ void plannerFSM() {
     setupMotors();
     setupEncoders();
     setupSensors();
+    resetController();
     
     // initialize internal state
     direction move = STOP;
@@ -455,6 +456,8 @@ void plannerFSM() {
     
     dir = NORTH;
     
+    brake();
+    setMotionState(STOP);
     
     ////////////////////////////////////////////////////////////
     //              3. Wait for Exploit Phase                 //
@@ -476,13 +479,15 @@ void plannerFSM() {
     //                  4. Exploit Phase                      //
     ////////////////////////////////////////////////////////////
     
-    /*
+    
     // we need the motors to drive
     setupMotors();
+    resetController();
     
     // find goal location
     //coord goal = findGoal();
     direction *path = exploit(position.x, position.y, dir, 2, 0);//goal.x, goal.y);
+    /*
 
     // replay path
     for(int i = 0; path[i] != STOP; i++) {

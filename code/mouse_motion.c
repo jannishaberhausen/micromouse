@@ -26,7 +26,7 @@
 
 // control parameters
 float k_p = 150;
-float k_i = 0;
+float k_i = 0.5;
 float k_d = 0;
 
 
@@ -346,8 +346,8 @@ void driveRightTurn(int degrees) {
 
     setMotorDirections_RightTurn();
 
-    MOTORL = 0.1 * MOTOR_MAX;
-    MOTORR = 0.1 * MOTOR_MAX;
+    MOTORL = 0.15 * MOTOR_MAX;
+    MOTORR = 0.15 * MOTOR_MAX;
 
     while (abs(getPositionInRad_2() - encoder_start) < rotation_in_rad);
 }
@@ -370,8 +370,8 @@ void driveLeftTurn(int degrees) {
 
     setMotorDirections_LeftTurn();
 
-    MOTORL = 0.1 * MOTOR_MAX;
-    MOTORR = 0.1 * MOTOR_MAX;
+    MOTORL = 0.15 * MOTOR_MAX;
+    MOTORR = 0.15 * MOTOR_MAX;
 
     while (abs(getPositionInRad_2() - encoder_start) < rotation_in_rad);
 }
@@ -604,8 +604,7 @@ void setMotorDirectionRight_Backward() {
  * @return the distance driven since the last encoder reset.
  */
 int distanceFromEncoderReadings() {
-    return ((getPositionInCounts_1() + getPositionInCounts_2()) / 2)
-                - start_position;
+    return ((getPositionInCounts_1() + getPositionInCounts_2()) / 2);
 }
 
 
@@ -617,7 +616,6 @@ int distanceFromEncoderReadings() {
  * manually!
  */
 void setMotionState(direction newState) {
-    
     // always remember the original position to know when to stop
     start_position = (getPositionInCounts_1()+getPositionInCounts_2()) / 2;
     motionState = newState;
@@ -632,12 +630,12 @@ void setMotionState(direction newState) {
 int getMotionCompleted() {
     if (motionState == FRONT)
         // length of one cell: 16.5 cm / (6 pi cm / 16*33*4 ticks) = 1849 ticks/cell
-        return distanceFromEncoderReadings() > 2000;
+        return (distanceFromEncoderReadings() - start_position) > 2000;
     
     if (motionState == STOP)
         return 1;
     
-    return 1;
+    return 0;
 }
 
 
@@ -684,6 +682,7 @@ void motionFSM() {
         case STOP:
             // completed.
             brake();
+            resetController();
             break;
         case EMPTY:
             break;
