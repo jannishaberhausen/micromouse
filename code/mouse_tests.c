@@ -254,6 +254,7 @@ void testMouseMotionBackAndForthInCorridor() {
         case RIGHT:
             driveRightTurn(180);
             mouseState = FRONT;
+            //resetController();
             break;
         default:
             break;
@@ -272,7 +273,7 @@ void testMouseSmoothRightTurn(){
 }
 
 
-void testMouseSmoothRightTurn(){
+void testMouseSmoothLeftTurn(){
     if (setup == 1) {
         setupMotors();
         setupEncoders();

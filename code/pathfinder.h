@@ -9,7 +9,7 @@
  * internal representation of the state of a wall
  */
 enum wall {
-    UNKNOWN=-1, WALL=0, WAY=1, EXPLORED=2, ENTRY=3
+    UNKNOWN=-1, WAY=0, WALL=1, EXPLORED=2, ENTRY=3
 };
 
 typedef enum wall wall;
@@ -45,7 +45,7 @@ typedef enum orientation orientation;
  * Possible orientations of the mouse wrt. the mouse
  */
 enum direction {
-    FRONT=0, RIGHT=1, BACK=2, LEFT=3, STOP=4
+    FRONT=0, RIGHT=1, BACK=2, LEFT=3, STOP=4, EMPTY=5
 };
 typedef enum direction direction;
 
