@@ -565,6 +565,17 @@ int checkForGoal() {
  ############################## HARDWARE MACROS ###############################
  ############################################################################*/
 
+
+/**
+ * Sets the direction of the motors to disable.
+ */
+void setMotorDirections_Disable() {
+    MOTINR1 = 1;
+    MOTINR2 = 1;
+    MOTINL1 = 1;
+    MOTINL2 = 1;
+}
+
 /**
  * Sets the direction of the motors to both go forward.
  */

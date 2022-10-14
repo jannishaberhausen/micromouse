@@ -383,6 +383,8 @@ void plannerFSM() {
     ////////////////////////////////////////////////////////////
     
     // we need the button to start
+    setMotionState(EMPTY);
+    setMotorDirections_Disable();
     setupSwitch();
     
     // value will be changed by the button ISR
@@ -391,7 +393,7 @@ void plannerFSM() {
     
     
     LED2 = LEDON;
-    LED4 = LEDOFF;
+    LED4 = LEDON;
     
     
     ////////////////////////////////////////////////////////////
@@ -399,6 +401,7 @@ void plannerFSM() {
     ////////////////////////////////////////////////////////////
     
     // we need motors, encoders, and sensors to drive
+    setMotionState(STOP);
     setupMotors();
     setupEncoders();
     setupSensors();
@@ -473,6 +476,8 @@ void plannerFSM() {
     dir = NORTH;
     
     brake();
+    
+    setMotorDirections_Disable();
     
     ////////////////////////////////////////////////////////////
     //              3. Wait for Exploit Phase                 //
