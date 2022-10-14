@@ -124,7 +124,7 @@ long getPositionInCounts_1()
 
 int getVelocityInCountsPerSample_1()
 {
-    static long oldPosition;
+    static long oldPosition1;
     long currentPosition;
     int velocity;
 
@@ -132,9 +132,9 @@ int getVelocityInCountsPerSample_1()
     _NSTDIS=1;
     GET_ENCODER_1 (currentPosition);
     _NSTDIS=0;
-    velocity=(currentPosition-oldPosition);
+    velocity=(currentPosition-oldPosition1);
 
-    oldPosition=currentPosition;
+    oldPosition1=currentPosition;
     return velocity;
 
 
@@ -150,7 +150,7 @@ long getPositionInCounts_2()
 
 int getVelocityInCountsPerSample_2()
 {
-    static long oldPosition;
+    static long oldPosition2;
     long currentPosition;
     int velocity;
 
@@ -158,9 +158,9 @@ int getVelocityInCountsPerSample_2()
     _NSTDIS=1;
     GET_ENCODER_2 (currentPosition);
     _NSTDIS=0;
-    velocity=(currentPosition-oldPosition);
+    velocity=(currentPosition-oldPosition2);
 
-    oldPosition=currentPosition;
+    oldPosition2=currentPosition;
     return velocity;
 
 
@@ -177,16 +177,11 @@ float getPositionInRad_2()
     return 3.141592*2*currentEncoderPosition/(16*4*33);
 }
 
-float getAvgPositionInRad() {
-    return (fabs(getPositionInRad_1()) + fabs(getPositionInRad_2())) / 2.0;
-}
-
-
 float getVelocityInRadPerSecond()
 {
 
 
-    static long oldPosition;
+    static long oldPosition1;
     float velocity;
     long currentPosition;
 
@@ -194,11 +189,51 @@ float getVelocityInRadPerSecond()
     _NSTDIS=1;
     GET_ENCODER_1 (currentPosition);
     _NSTDIS=0;
-    velocity=3.141592 *2* ((currentPosition-oldPosition)*0.01) / (33*4*16);
+    velocity=3.141592 *2* ((currentPosition-oldPosition1)*0.01) / (33*4*16);
 
-    oldPosition=currentPosition;
+    oldPosition1=currentPosition;
     return velocity;
+}
 
 
 
+float getAvgPositionInRad() {
+    return (fabs(getPositionInRad_1()) + fabs(getPositionInRad_2())) / 2.0;
+}
+
+
+void setPosition(int multiple, int offset) {
+    
+    long positionLeft = getPositionInCounts_1() - offset;
+    long positionRight = getPositionInCounts_2() - offset;
+    
+    long averagePosition = (positionLeft + positionRight) / 2;
+    if (averagePosition < 0)
+        averagePosition = 0;
+    
+    int velocity1 = getVelocityInCountsPerSample_1();
+    int velocity2 = getVelocityInCountsPerSample_2();
+    
+    // round to multiples of count
+    long modulus = averagePosition % multiple;
+    if (modulus > multiple/2) {
+        averagePosition -= modulus;
+    } else {
+        averagePosition += (multiple - modulus);
+    }
+    
+    averagePosition += offset;
+    
+    // set position
+    _NSTDIS=1;
+    rotationCount1 = averagePosition / MAX1CNT;
+    rotationCount2 = rotationCount1;
+    POS1CNT = averagePosition % MAX1CNT;
+    POS2CNT = POS1CNT;
+    _NSTDIS=0;
+    
+    // fix velocity at discontinuity
+    static long oldPosition1, oldPosition2;
+    oldPosition1 = averagePosition - velocity1;
+    oldPosition2 = averagePosition - velocity2;
 }

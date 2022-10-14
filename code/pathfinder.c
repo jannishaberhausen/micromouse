@@ -224,7 +224,7 @@ direction explore(unsigned int x, unsigned int y, orientation dir) {
  *
  * @return Array of directions leading to the goal
  */
-direction* exploit(unsigned int x, unsigned int y, orientation dir,
+void exploit(unsigned int x, unsigned int y, orientation dir,
                    unsigned int x_dest, unsigned int y_dest) {
 
     // prepare the maze: use flag for distance
@@ -232,7 +232,7 @@ direction* exploit(unsigned int x, unsigned int y, orientation dir,
         for (int j = 0; j < SIZE; j++) {
             maze[i][j].flag = -1;
             for (int k = 0; k < 4; k++) {
-                maze[i][j].walls[k] = (maze[i][j].walls[k] > 0);
+                maze[i][j].walls[k] = (maze[i][j].walls[k] == 1 || maze[i][j].walls[k] == -1) ? WALL : WAY;
             }
         }
     }
@@ -310,7 +310,7 @@ direction* exploit(unsigned int x, unsigned int y, orientation dir,
 
     // calc and save directions for optimal path ...
     int path_len = maze[x_dest][y_dest].flag;
-    direction *path = malloc((path_len+1) * sizeof(direction));
+    direction path[path_len+1];
 
     coord pos = {x_dest, y_dest};
     path[path_len] = STOP;
@@ -356,7 +356,14 @@ direction* exploit(unsigned int x, unsigned int y, orientation dir,
     }
     //printf("\n");
 
-    return path;
+    // replay path
+    for(int i = 0; path[i] != STOP; i++) {
+        setMotionState(path[i]);
+        // wait for completion
+        while (!getMotionCompleted());
+    }
+    setMotionState(STOP);
+    
 }
 
 
@@ -368,6 +375,9 @@ direction* exploit(unsigned int x, unsigned int y, orientation dir,
  */
 void plannerFSM() {
     
+    LED2 = LEDON;
+    LED4 = LEDON;
+    
     ////////////////////////////////////////////////////////////
     //              1. Wait for Explore Phase                 //
     ////////////////////////////////////////////////////////////
@@ -378,6 +388,10 @@ void plannerFSM() {
     // value will be changed by the button ISR
     current_state_planner = WAIT_EXPLORE;
     while(current_state_planner == WAIT_EXPLORE);
+    
+    
+    LED2 = LEDON;
+    LED4 = LEDOFF;
     
     
     ////////////////////////////////////////////////////////////
@@ -434,8 +448,10 @@ void plannerFSM() {
         
     } while(move != STOP);
     
+    
     LED2 = LEDOFF;
     LED4 = LEDOFF;
+    
     setMotionState(EMPTY);
     
     // turn back to start orientation.
@@ -457,7 +473,6 @@ void plannerFSM() {
     dir = NORTH;
     
     brake();
-    setMotionState(STOP);
     
     ////////////////////////////////////////////////////////////
     //              3. Wait for Exploit Phase                 //
@@ -465,15 +480,11 @@ void plannerFSM() {
     
     // we need the button to start
     setupSwitch();
-    LED2 = LEDON;
-    LED4 = LEDON;
-    
     
     // value will be changed by the button ISR
     current_state_planner = WAIT_EXPLOIT;
     while(current_state_planner == WAIT_EXPLOIT);
-    LED2 = LEDON;
-    LED4 = LEDOFF;
+    
     
     ////////////////////////////////////////////////////////////
     //                  4. Exploit Phase                      //
@@ -481,12 +492,20 @@ void plannerFSM() {
     
     
     // we need the motors to drive
+    
+    setMotionState(STOP);
     setupMotors();
     resetController();
     
+    LED2 = LEDON;
+    LED4 = LEDON;
+    
     // find goal location
     //coord goal = findGoal();
-    direction *path = exploit(position.x, position.y, dir, 2, 0);//goal.x, goal.y);
+    exploit(position.x, position.y, dir, 2, 0);//goal.x, goal.y);
+    
+    LED2 = LEDOFF;
+    LED4 = LEDON;
     /*
 
     // replay path

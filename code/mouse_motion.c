@@ -24,11 +24,15 @@
 #include <stdlib.h>
 
 
+// length of one cell: 18 cm / (6 pi cm / 16*33*4 ticks) = 2016,8 ticks/cell
+int length_of_cell = 2017;
+
 // control parameters
 float k_p = 150;
 float k_i = 0.5;
 float k_d = 0;
 
+float sensor_k_p = 0.003;
 
 // error terms used by the controller. Have to be defined globally
 float correction_left = 0;
@@ -55,6 +59,13 @@ int delay = 0;
 
 // stores the starting position so we know how far to drive
 int start_position = 0;
+
+// used for recalibrating the encoders:
+// Wall configuratin at the last measurement
+int last_wall_l, last_wall_f, last_wall_r;
+// true if more than half of the distance has been driven.
+// Then, the sensors look into the new cell
+int passed_archway;
 
 // state variable for the motor control FSM
 direction motionState = STOP;
@@ -89,6 +100,8 @@ void resetController() {
         
         v_dest_left = BASE_SPEED;
         v_dest_right = BASE_SPEED;
+        
+        get_walls(&last_wall_l, &last_wall_f, &last_wall_r);
 }
 
 
@@ -212,8 +225,8 @@ void driveForwardAlongCorridor() {
     // v_dest ~ 10, sensor diff for 1cm ~ 800,
     // so we have to use *very* small weights
     
-    v_dest_left = BASE_SPEED + (sensor_left - sensor_right) * 0.003;
-    v_dest_right = BASE_SPEED + (sensor_right - sensor_left) * 0.003;
+    v_dest_left = BASE_SPEED + (sensor_left - sensor_right) * sensor_k_p;
+    v_dest_right = BASE_SPEED + (sensor_right - sensor_left) * sensor_k_p;
     
     
     ///////////////////////////////////////////////////////////////////////
@@ -247,8 +260,8 @@ void driveForwardAlongLeftWall() {
     
     // (senosr_left - sensor_right) = (sensor_left - (1000-sensor_left))
     // = (2*sensor_left - 1000)
-    v_dest_left = BASE_SPEED + (sensor_left - 1000) * 0.003;
-    v_dest_right = BASE_SPEED + (1000 - sensor_left) * 0.003;
+    v_dest_left = BASE_SPEED + (sensor_left - 1000) * sensor_k_p;
+    v_dest_right = BASE_SPEED + (1000 - sensor_left) * sensor_k_p;
     
     
     ///////////////////////////////////////////////////////////////////////
@@ -282,8 +295,8 @@ void driveForwardAlongRightWall() {
     
     // (senosr_left - sensor_right) = (sensor_left - (1000-sensor_left))
     // = (2*sensor_left - 1000)
-    v_dest_left = BASE_SPEED + (1000 - sensor_right) * 0.003;
-    v_dest_right = BASE_SPEED + (sensor_right - 1000) * 0.003;
+    v_dest_left = BASE_SPEED + (1000 - sensor_right) * sensor_k_p;
+    v_dest_right = BASE_SPEED + (sensor_right - 1000) * sensor_k_p;
     
     
     ///////////////////////////////////////////////////////////////////////
@@ -308,6 +321,29 @@ void driveForward() {
     // decide which controller to use
     int wall_left, wall_front, wall_right;
     get_walls(&wall_left, &wall_front, &wall_right);
+    
+    // recalibrate encoders
+    if (wall_left != last_wall_l || wall_right != last_wall_r) {
+        // Walls to the left and right have changed
+        if (!passed_archway) {
+            // Condition avoids resetting twice when passing a post
+            passed_archway = 1;
+            // half distance driven, sensors are 4.3cm ahead of motors:
+            // 18cm / 2 - 4.3cm = 4.7cm driven, or 
+            // 4.7cm / (6 pi cm / 16*33*4 ticks) = 526.6 ticks
+            // TODO doesnt work yet...
+            //setPosition(length_of_cell, 527);
+        }
+    }
+    
+    int unused, distance_front;
+    sharpRaw(&unused, &distance_front, &unused);
+    
+    if (distance_front > 1900) {
+        // Recalibrate on front walls ony if there is a wall now
+        // no more forward motion now !!! 
+        setMotionState(STOP);
+    }
     
     if (wall_left) {
         if (wall_right) {
@@ -337,6 +373,7 @@ void driveForward() {
  */
 void driveRightTurn(int degrees) {
     delay = 0;
+    resetController();
     
     float encoder_start = getAvgPositionInRad();
 
@@ -361,6 +398,7 @@ void driveRightTurn(int degrees) {
  */
 void driveLeftTurn(int degrees) {
     delay = 0;
+    resetController();
     
     float encoder_start = getAvgPositionInRad();
     
@@ -618,6 +656,7 @@ int distanceFromEncoderReadings() {
 void setMotionState(direction newState) {
     // always remember the original position to know when to stop
     start_position = (getPositionInCounts_1()+getPositionInCounts_2()) / 2;
+    passed_archway = 0;
     motionState = newState;
 }
 
@@ -629,8 +668,7 @@ void setMotionState(direction newState) {
  */
 int getMotionCompleted() {
     if (motionState == FRONT)
-        // length of one cell: 16.5 cm / (6 pi cm / 16*33*4 ticks) = 1849 ticks/cell
-        return (distanceFromEncoderReadings() - start_position) > 2000;
+        return (distanceFromEncoderReadings() - start_position) > length_of_cell;
     
     if (motionState == STOP)
         return 1;
@@ -663,28 +701,24 @@ void motionFSM() {
             break;
         case RIGHT:
             // first rotate, move as next step
-            resetController();
             driveRightTurn(90);
             resetController();
             setMotionState(FRONT);
             break;
         case LEFT:
             // first rotate, move as next step
-            resetController();
             driveLeftTurn(90);
             resetController();
             setMotionState(FRONT);
             break;
         case BACK:
             // first rotate, move as next step
-            resetController();
             driveRightTurn(180);
             resetController();
             setMotionState(FRONT);
             break;
         case STOP:
             // completed.
-            resetController();
             brake();
             resetController();
             break;

@@ -4,7 +4,7 @@
 #include "pathfinder.h"
 
 // desired driving speed of the micromouse
-#define BASE_SPEED 10
+#define BASE_SPEED 15
 
 #ifdef	__cplusplus
 extern "C" {

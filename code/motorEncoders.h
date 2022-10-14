@@ -21,11 +21,12 @@ long getPositionInCounts_2();
 int getVelocityInCountsPerSample_2();
 
 float getAvgPositionInRad();
+void setPosition(int multiple, int offset);
 
 extern long rotationCount1;
 extern long rotationCount2;
 
-#define GET_ENCODER_1(RIGHT_ENCODER_POSITION_VALUE) (RIGHT_ENCODER_POSITION_VALUE=rotationCount1+POSCNT)
+#define GET_ENCODER_1(RIGHT_ENCODER_POSITION_VALUE) (RIGHT_ENCODER_POSITION_VALUE=rotationCount1+POS1CNT)
 #define GET_ENCODER_2(LEFT_ENCODER_POSITION_VALUE) (LEFT_ENCODER_POSITION_VALUE=rotationCount2+POS2CNT)
 
 

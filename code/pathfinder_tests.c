@@ -248,6 +248,7 @@ int DEBUG_getMotionCompleted() {
  */
 void DEBUG_setMotionState(direction newState) {
     debug_delay = 100;
+    printf("%d\n", newState);
     //mouseState = newState;
 }
 
@@ -449,17 +450,7 @@ int test_main() {
     ////////////////////////////////////////////////////////////
     
     // plan path
-    direction *path = exploit(x, y, test_dir, 2, 0);
-
-    // replay path
-    printf("Directions to goal:\n");
-    for(int i = 0; path[i] != STOP; i++) {
-        DEBUG_setMotionState(path[i]);
-        // wait for completion
-        while (DEBUG_getMotionCompleted() == 0);
-        printf("%d", path[i]);
-
-    }
+    exploit(x, y, test_dir, 2, 0);
 
     // COMPLETE!
     

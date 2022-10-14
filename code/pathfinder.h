@@ -59,7 +59,7 @@ extern plannerState current_state_planner;
 
 void initMaze(unsigned int x, unsigned int y, orientation dir);
 direction explore(unsigned int x, unsigned int y, orientation dir);
-direction* exploit(unsigned int x, unsigned int y, orientation dir,
+void exploit(unsigned int x, unsigned int y, orientation dir,
                    unsigned int x_dest, unsigned int y_dest);
 
 void plannerFSM();
