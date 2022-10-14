@@ -202,38 +202,21 @@ float getAvgPositionInRad() {
 }
 
 
-void setPosition(int multiple, int offset) {
+void setPosition(int counts) {
     
-    long positionLeft = getPositionInCounts_1() - offset;
-    long positionRight = getPositionInCounts_2() - offset;
-    
-    long averagePosition = (positionLeft + positionRight) / 2;
-    if (averagePosition < 0)
-        averagePosition = 0;
+    // set position
+    _NSTDIS=1;
+    rotationCount1 = counts / MAX1CNT;
+    rotationCount2 = counts / MAX2CNT;
+    POS1CNT = counts % MAX1CNT;
+    POS2CNT = counts % MAX2CNT;
+    _NSTDIS=0;
     
     int velocity1 = getVelocityInCountsPerSample_1();
     int velocity2 = getVelocityInCountsPerSample_2();
     
-    // round to multiples of count
-    long modulus = averagePosition % multiple;
-    if (modulus > multiple/2) {
-        averagePosition -= modulus;
-    } else {
-        averagePosition += (multiple - modulus);
-    }
-    
-    averagePosition += offset;
-    
-    // set position
-    _NSTDIS=1;
-    rotationCount1 = averagePosition / MAX1CNT;
-    rotationCount2 = rotationCount1;
-    POS1CNT = averagePosition % MAX1CNT;
-    POS2CNT = POS1CNT;
-    _NSTDIS=0;
-    
     // fix velocity at discontinuity
     static long oldPosition1, oldPosition2;
-    oldPosition1 = averagePosition - velocity1;
-    oldPosition2 = averagePosition - velocity2;
+    oldPosition1 = counts - velocity1;
+    oldPosition2 = counts - velocity2;
 }

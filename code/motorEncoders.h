@@ -21,7 +21,7 @@ long getPositionInCounts_2();
 int getVelocityInCountsPerSample_2();
 
 float getAvgPositionInRad();
-void setPosition(int multiple, int offset);
+void setPosition(int counts);
 
 extern long rotationCount1;
 extern long rotationCount2;

@@ -323,27 +323,36 @@ void driveForward() {
     get_walls(&wall_left, &wall_front, &wall_right);
     
     // recalibrate encoders
+    //// Using left and right walls
     if (wall_left != last_wall_l || wall_right != last_wall_r) {
         // Walls to the left and right have changed
         if (!passed_archway) {
             // Condition avoids resetting twice when passing a post
             passed_archway = 1;
-            // half distance driven, sensors are 4.3cm ahead of motors:
-            // 18cm / 2 - 4.3cm = 4.7cm driven, or 
-            // 4.7cm / (6 pi cm / 16*33*4 ticks) = 526.6 ticks
-            // TODO doesnt work yet...
-            //setPosition(length_of_cell, 527);
+            // distance driven:
+            // 18cm / 2 - 5.2cm = 3.5cm driven, or 
+            // 3.5cm / (6 pi cm / 16*33*4 ticks) = 392.1 ticks
+            //setPosition(start_position + 426);
         }
     }
     
+    //// Using the front wall
     int unused, distance_front;
     sharpRaw(&unused, &distance_front, &unused);
     
-    if (distance_front > 1900) {
-        // Recalibrate on front walls ony if there is a wall now
-        // no more forward motion now !!! 
-        setMotionState(STOP);
+    if (wall_front) {
+        // We are driving too far, brake!
+        if (distance_front > 1200) {
+            // Recalibrate on front walls ony if there is a wall now
+            // no more forward motion now !!! 
+            setMotionState(STOP);
+        } else {
+            // Drive until we go to the first case
+            // disable motionComplete-mechanism
+            start_position = distanceFromEncoderReadings();
+        }
     }
+    
     
     if (wall_left) {
         if (wall_right) {
@@ -383,8 +392,8 @@ void driveRightTurn(int degrees) {
 
     setMotorDirections_RightTurn();
 
-    MOTORL = 0.15 * MOTOR_MAX;
-    MOTORR = 0.15 * MOTOR_MAX;
+    MOTORL = 0.19 * MOTOR_MAX;
+    MOTORR = 0.19 * MOTOR_MAX;
 
     while (fabs(getAvgPositionInRad() - encoder_start) < rotation_in_rad);
 }
@@ -408,8 +417,8 @@ void driveLeftTurn(int degrees) {
 
     setMotorDirections_LeftTurn();
 
-    MOTORL = 0.15 * MOTOR_MAX;
-    MOTORR = 0.15 * MOTOR_MAX;
+    MOTORL = 0.19 * MOTOR_MAX;
+    MOTORR = 0.19 * MOTOR_MAX;
 
     while (fabs(getAvgPositionInRad() - encoder_start) < rotation_in_rad);
 }
@@ -668,6 +677,8 @@ void setMotionState(direction newState) {
     // always remember the original position to know when to stop
     start_position = (getPositionInCounts_1()+getPositionInCounts_2()) / 2;
     passed_archway = 0;
+    // reset encoders
+    //setupEncoders();
     motionState = newState;
 }
 

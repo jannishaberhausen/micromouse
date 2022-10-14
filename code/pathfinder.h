@@ -3,7 +3,7 @@
 
 
 // Size of the maze
-#define SIZE 4
+#define SIZE 6
 
 /**
  * internal representation of the state of a wall

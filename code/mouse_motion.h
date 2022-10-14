@@ -32,6 +32,7 @@ extern "C" {
     int checkForGoal();
 
     // Hardware Macros
+    void setMotorDirections_Disable();
     void setMotorDirections_Forward();
     void setMotorDirections_RightTurn();
     void setMotorDirections_LeftTurn();

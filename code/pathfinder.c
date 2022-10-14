@@ -417,7 +417,7 @@ void plannerFSM() {
     
     // loop until explore phase completed
     do {
-
+        
         // plan next step. Includes collecting sensor information
         move = explore(position.x, position.y, dir);
         
@@ -506,8 +506,8 @@ void plannerFSM() {
     LED4 = LEDON;
     
     // find goal location
-    //coord goal = findGoal();
-    exploit(position.x, position.y, dir, 2, 0);//goal.x, goal.y);
+    coord goal = findGoal();
+    exploit(position.x, position.y, dir, goal.x, goal.y);
     
     LED2 = LEDOFF;
     LED4 = LEDON;
