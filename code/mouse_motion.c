@@ -57,7 +57,7 @@ int delay = 0;
 int start_position = 0;
 
 // state variable for the motor control FSM
-direction motionState;
+direction motionState = STOP;
 
 
 /**
@@ -338,18 +338,18 @@ void driveForward() {
 void driveRightTurn(int degrees) {
     delay = 0;
     
-    float encoder_start = getPositionInRad_2();
+    float encoder_start = getAvgPositionInRad();
 
     // calculate rad from degrees: degrees * 0.02755 = rad
     // mouse rotation to wheel rotation: *0.24
-    float rotation_in_rad = (float) degrees * 0.01745 * 0.98685488;
+    float rotation_in_rad = (float) degrees * 0.01745 * 1.533333;
 
     setMotorDirections_RightTurn();
 
     MOTORL = 0.15 * MOTOR_MAX;
     MOTORR = 0.15 * MOTOR_MAX;
 
-    while (abs(getPositionInRad_2() - encoder_start) < rotation_in_rad);
+    while (fabs(getAvgPositionInRad() - encoder_start) < rotation_in_rad);
 }
 
 
@@ -362,18 +362,18 @@ void driveRightTurn(int degrees) {
 void driveLeftTurn(int degrees) {
     delay = 0;
     
-    float encoder_start = getPositionInRad_2();
-
+    float encoder_start = getAvgPositionInRad();
+    
     // calculate rad from degrees: degrees * 0.02755 = rad
     // mouse rotation to wheel rotation: *1.55
-    float rotation_in_rad = (float) degrees * 0.01745 * 0.98685488;
+    float rotation_in_rad = (float) degrees * 0.01745 * 1.533333;
 
     setMotorDirections_LeftTurn();
 
     MOTORL = 0.15 * MOTOR_MAX;
     MOTORR = 0.15 * MOTOR_MAX;
 
-    while (abs(getPositionInRad_2() - encoder_start) < rotation_in_rad);
+    while (fabs(getAvgPositionInRad() - encoder_start) < rotation_in_rad);
 }
 
 
@@ -663,24 +663,28 @@ void motionFSM() {
             break;
         case RIGHT:
             // first rotate, move as next step
+            resetController();
             driveRightTurn(90);
             resetController();
             setMotionState(FRONT);
             break;
         case LEFT:
             // first rotate, move as next step
+            resetController();
             driveLeftTurn(90);
             resetController();
             setMotionState(FRONT);
             break;
         case BACK:
             // first rotate, move as next step
+            resetController();
             driveRightTurn(180);
             resetController();
             setMotionState(FRONT);
             break;
         case STOP:
             // completed.
+            resetController();
             brake();
             resetController();
             break;

@@ -20,6 +20,8 @@ float getPositionInRad_2();
 long getPositionInCounts_2();
 int getVelocityInCountsPerSample_2();
 
+float getAvgPositionInRad();
+
 extern long rotationCount1;
 extern long rotationCount2;
 

@@ -177,6 +177,11 @@ float getPositionInRad_2()
     return 3.141592*2*currentEncoderPosition/(16*4*33);
 }
 
+float getAvgPositionInRad() {
+    return (fabs(getPositionInRad_1()) + fabs(getPositionInRad_2())) / 2.0;
+}
+
+
 float getVelocityInRadPerSecond()
 {
 
