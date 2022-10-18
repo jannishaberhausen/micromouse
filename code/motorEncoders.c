@@ -203,7 +203,7 @@ float getAvgPositionInRad() {
 
 
 int getAvgPositionInCounts() {
-    return (abs(getPositionInCounts_1()) + abs(getPositionInCounts_2())) / 2;
+    return (fabs(getPositionInCounts_1()) + fabs(getPositionInCounts_2())) / 2;
 }
 
 

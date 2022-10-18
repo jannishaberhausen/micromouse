@@ -25,7 +25,8 @@ extern "C" {
     void driveForward();
     void driveRightTurn(int degrees);
     void driveLeftTurn(int degrees);
-    void driveControlledRightTurn(int degrees);
+    void driveControlledRightTurn();
+    void driveControlledLeftTurn();
     void driveSmoothRightTurn(int degrees);
     void driveSmoothLeftTurn(int degrees);
     void brake();
