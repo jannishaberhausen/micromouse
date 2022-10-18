@@ -33,8 +33,8 @@ int length_of_cell = 2017;
 int length_of_curve = 809;
 
 // control parameters
-float k_p = 150;
-float k_i = 0.7;
+float k_p = 500;
+float k_i = 0.5;
 float k_d = 0;
 
 float sensor_k_p = 0.003;
@@ -149,11 +149,17 @@ void controlFixedSpeed(float v_l, float v_r) {
     correction_right = error_r * k_p + acc_error_right * k_i; // + d_error_r * k_d;
     
     
-    if(BASE_SPEED + correction_left < MOTOR_MAX)
-        MOTORL = BASE_SPEED + correction_left;
+    if(900 + correction_left < MOTOR_MAX) {
+        MOTORL = 900 + correction_left;
+    } else {
+        MOTORL = MOTOR_MAX;
+    }
     
-    if(BASE_SPEED + correction_right < MOTOR_MAX)
-        MOTORR = BASE_SPEED + correction_right;
+    if(900 + correction_right < MOTOR_MAX) {
+        MOTORR = 900 + correction_right;
+    } else {
+        MOTORR = MOTOR_MAX;
+    }
     
 }
 
@@ -329,17 +335,17 @@ void driveForward() {
     
     // recalibrate encoders
     //// Using left and right walls
-    if (wall_left != last_wall_l || wall_right != last_wall_r) {
-        // Walls to the left and right have changed
-        if (!passed_archway) {
-            // Condition avoids resetting twice when passing a post
-            passed_archway = 1;
-            // distance driven:
-            // 18cm / 2 - 5.2cm = 3.5cm driven, or 
-            // 3.5cm / (6 pi cm / 16*33*4 ticks) = 392.1 ticks
-            //setPosition(start_position + 426);
-        }
-    }
+//    if (wall_left != last_wall_l || wall_right != last_wall_r) {
+//        // Walls to the left and right have changed
+//        if (!passed_archway) {
+//            // Condition avoids resetting twice when passing a post
+//            passed_archway = 1;
+//            // distance driven:
+//            // 18cm / 2 - 5.2cm = 3.5cm driven, or 
+//            // 3.5cm / (6 pi cm / 16*33*4 ticks) = 392.1 ticks
+//            //setPosition(start_position + 426);
+//        }
+//    }
     
     //// Using the front wall
     int unused, distance_front;
@@ -435,7 +441,7 @@ void driveLeftTurn(int degrees) {
  * @param
  *      degrees (int): size of turning angle 
  */
-void driveControlledRightTurn(int degrees) {
+void driveControlledRightTurn() {
     delay = 0;
     
     setMotorDirections_RightTurn();
@@ -450,7 +456,7 @@ void driveControlledRightTurn(int degrees) {
  * @param
  *      degrees (int): size of turning angle 
  */
-void driveControlledLeftTurn(int degrees) {
+void driveControlledLeftTurn() {
     delay = 0;
     
     setMotorDirections_LeftTurn();
@@ -781,7 +787,7 @@ void motionFSM() {
             break;
         case RIGHT:
             // first rotate, move as next step
-            driveControlledRightTurn(90);
+            driveControlledRightTurn();
             if(getRotationCompleted()) {
                 resetController();
                 setMotionState(FRONT);
@@ -789,7 +795,7 @@ void motionFSM() {
             break;
         case LEFT:
             // first rotate, move as next step
-            driveControlledLeftTurn(90);
+            driveControlledLeftTurn();
             if(getRotationCompleted()) {
                 resetController();
                 setMotionState(FRONT);
@@ -797,7 +803,7 @@ void motionFSM() {
             break;
         case BACK:
             // first rotate, move as next step
-            driveControlledRightTurn(180);
+            driveControlledRightTurn();
             if(getRotationCompleted()) {
                 resetController();
                 setMotionState(FRONT);
