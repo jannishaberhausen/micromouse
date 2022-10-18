@@ -202,6 +202,11 @@ float getAvgPositionInRad() {
 }
 
 
+int getAvgPositionInCounts() {
+    return (abs(getPositionInCounts_1()) + abs(getPositionInCounts_2())) / 2;
+}
+
+
 void setPosition(int counts) {
     
     // set position

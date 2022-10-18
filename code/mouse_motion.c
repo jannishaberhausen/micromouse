@@ -26,10 +26,15 @@
 
 // length of one cell: 18 cm / (6 pi cm / 16*33*4 ticks) = 2016,8 ticks/cell
 int length_of_cell = 2017;
+// length of one cell: (18cm / 6 pi cm) * 2 pi = 6 rad
+//float length_of_cell = 6;
+// Wheel rotation for a 90° robot rotation
+//float length_of_curve = 2.408553844;
+int length_of_curve = 809;
 
 // control parameters
 float k_p = 150;
-float k_i = 0.5;
+float k_i = 0.7;
 float k_d = 0;
 
 float sensor_k_p = 0.003;
@@ -58,7 +63,7 @@ float vbr = 0.04;
 int delay = 0;
 
 // stores the starting position so we know how far to drive
-int start_position = 0;
+float start_position = 0;
 
 // used for recalibrating the encoders:
 // Wall configuratin at the last measurement
@@ -121,8 +126,8 @@ void resetController() {
  */
 void controlFixedSpeed(float v_l, float v_r) {
     
-    float left = getVelocityInCountsPerSample_1();
-    float right = getVelocityInCountsPerSample_2();
+    float left = fabs(getVelocityInCountsPerSample_1());
+    float right = fabs(getVelocityInCountsPerSample_2());
     
     // P-part
     float error_l = v_l-left;
@@ -392,8 +397,8 @@ void driveRightTurn(int degrees) {
 
     setMotorDirections_RightTurn();
 
-    MOTORL = 0.19 * MOTOR_MAX;
-    MOTORR = 0.19 * MOTOR_MAX;
+    MOTORL = MIN_SPEED * MOTOR_MAX;
+    MOTORR = MIN_SPEED * MOTOR_MAX;
 
     while (fabs(getAvgPositionInRad() - encoder_start) < rotation_in_rad);
 }
@@ -412,15 +417,45 @@ void driveLeftTurn(int degrees) {
     float encoder_start = getAvgPositionInRad();
     
     // calculate rad from degrees: degrees * 0.02755 = rad
-    // mouse rotation to wheel rotation: *1.55
+    // mouse rotation to wheel rotation: *1.533
     float rotation_in_rad = (float) degrees * 0.01745 * 1.533333;
 
     setMotorDirections_LeftTurn();
 
-    MOTORL = 0.19 * MOTOR_MAX;
-    MOTORR = 0.19 * MOTOR_MAX;
+    MOTORL = MIN_SPEED * MOTOR_MAX;
+    MOTORR = MIN_SPEED * MOTOR_MAX;
 
     while (fabs(getAvgPositionInRad() - encoder_start) < rotation_in_rad);
+}
+
+
+/**
+ * Lets the mouse turn clockwise by the specified angle.
+ * 
+ * @param
+ *      degrees (int): size of turning angle 
+ */
+void driveControlledRightTurn(int degrees) {
+    delay = 0;
+    
+    setMotorDirections_RightTurn();
+
+    controlFixedSpeed(BASE_SPEED, BASE_SPEED);
+}
+
+
+/**
+ * Lets the mouse turn clockwise by the specified angle.
+ * 
+ * @param
+ *      degrees (int): size of turning angle 
+ */
+void driveControlledLeftTurn(int degrees) {
+    delay = 0;
+    
+    setMotorDirections_LeftTurn();
+
+    controlFixedSpeed(BASE_SPEED, BASE_SPEED);
 }
 
 
@@ -474,6 +509,7 @@ void driveSmoothLeftTurn(int degrees) {
  * function when the remaining wheel speed is below a threshold
  */
 void brake() {
+    setMotorDirections_Disable();
     MOTORL = 0;
     MOTORR = 0;
     /*
@@ -674,6 +710,8 @@ int distanceFromEncoderReadings() {
  * manually!
  */
 void setMotionState(direction newState) {
+    if (newState != motionState)
+        resetController();
     // always remember the original position to know when to stop
     start_position = (getPositionInCounts_1()+getPositionInCounts_2()) / 2;
     passed_archway = 0;
@@ -688,14 +726,34 @@ void setMotionState(direction newState) {
  * 
  * @return 1 if completed, 0 otherwise.
  */
+int getRotationCompleted() {
+    switch(motionState) {
+        case LEFT:
+            return (getAvgPositionInCounts() - start_position) > length_of_curve;
+        case RIGHT:
+            return (getAvgPositionInCounts() - start_position) > length_of_curve;
+        case BACK:
+            return (getAvgPositionInCounts() - start_position) > 2*length_of_curve;
+        default:
+            return 0;
+    }
+}
+
+
+/**
+ * Function used by the motion planner to check completion of a motion.
+ * 
+ * @return 1 if completed, 0 otherwise.
+ */
 int getMotionCompleted() {
-    if (motionState == FRONT)
-        return (distanceFromEncoderReadings() - start_position) > length_of_cell;
-    
-    if (motionState == STOP)
-        return 1;
-    
-    return 0;
+    switch(motionState) {
+        case FRONT:
+            return (distanceFromEncoderReadings() - start_position) > length_of_cell;
+        case STOP:
+            return 1;
+        default:
+            return 0;
+    }
 }
 
 
@@ -723,21 +781,27 @@ void motionFSM() {
             break;
         case RIGHT:
             // first rotate, move as next step
-            driveRightTurn(90);
-            resetController();
-            setMotionState(FRONT);
+            driveControlledRightTurn(90);
+            if(getRotationCompleted()) {
+                resetController();
+                setMotionState(FRONT);
+            }
             break;
         case LEFT:
             // first rotate, move as next step
-            driveLeftTurn(90);
-            resetController();
-            setMotionState(FRONT);
+            driveControlledLeftTurn(90);
+            if(getRotationCompleted()) {
+                resetController();
+                setMotionState(FRONT);
+            }
             break;
         case BACK:
             // first rotate, move as next step
-            driveRightTurn(180);
-            resetController();
-            setMotionState(FRONT);
+            driveControlledRightTurn(180);
+            if(getRotationCompleted()) {
+                resetController();
+                setMotionState(FRONT);
+            }
             break;
         case STOP:
             // completed.

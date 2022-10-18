@@ -5,6 +5,7 @@
 
 // desired driving speed of the micromouse
 #define BASE_SPEED 15
+#define MIN_SPEED 0.1
 
 #ifdef	__cplusplus
 extern "C" {
@@ -14,13 +15,17 @@ extern "C" {
     
     void setMotionState(direction newState);
     int getMotionCompleted();
+    int getRotationCompleted();
     void motionFSM();
+    
+    void controlFixedSpeed(float left_speed, float right_speed);
     
     // Motion functions
     void resetController();
     void driveForward();
     void driveRightTurn(int degrees);
     void driveLeftTurn(int degrees);
+    void driveControlledRightTurn(int degrees);
     void driveSmoothRightTurn(int degrees);
     void driveSmoothLeftTurn(int degrees);
     void brake();
