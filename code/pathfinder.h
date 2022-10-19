@@ -45,7 +45,7 @@ typedef enum orientation orientation;
  * Possible orientations of the mouse wrt. the mouse
  */
 enum direction {
-    FRONT=0, RIGHT=1, BACK=2, LEFT=3, STOP=4, EMPTY=5
+    FRONT=0, RIGHT=1, BACK=2, LEFT=3, STOP=4, EMPTY=5, ROTATE_RIGHT=6, ROTATE_LEFT=7, HALF_FRONT=8
 };
 typedef enum direction direction;
 

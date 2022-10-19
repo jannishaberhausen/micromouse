@@ -32,7 +32,7 @@ int length_of_cell = 2017;
 //float length_of_curve = 2.408553844;
 int length_of_curve = 809;
 
-int race_length_of_curve = 1350;
+int race_length_of_curve = 1400;
 
 // control parameters
 float k_p = 500;
@@ -50,12 +50,13 @@ float last_error_right = 0;
 float acc_error_left = 0;
 float acc_error_right = 0;
 
+int BASE_SPEED = 15;
+
 // desired velocity in ticks per sample,
 // 2112 ticks/rotation at 0.5 rotations/second
 // and 100 samples/second => 10.56 ticks per sample
-float v_dest_left = BASE_SPEED;
-float v_dest_right = BASE_SPEED;
-
+float v_dest_left;
+float v_dest_right;
 
 // fraction of base speed of left and right motors
 float vbl = 0.04;
@@ -77,15 +78,6 @@ int passed_archway;
 // state variable for the motor control FSM
 direction motionState = STOP;
 direction raceMotionState = STOP;
-
-/* boolean, only used during exploit phase 
- * 0 = rotation by raceMotionFSM not completed, 1 = rotation completed
- * There is a setter and getter function defined for raceMotionCompleted.
- * raceMotionFSM has read-and-write access on raceMotionCompleted, while
- * motionPlanner has only read access. That way motionPlanner can query when a 
- * motion is marked as completed by the raceMotionFSM.
- */
-int raceRotationCompleted = 0;
 
 
 /**
@@ -458,6 +450,13 @@ void driveControlledRightTurn() {
  * Lets the mouse turn clockwise by 90 degrees.
  */
 void raceControlledRightTurn() {
+    /* wait until right turn becomes available 
+     * (if encoder ticks send the mouse too short)
+     */
+    int wall_left, wall_front, wall_right;
+    get_walls(&wall_left, &wall_front, &wall_right);
+    while (wall_right > 650);
+    
     controlFixedSpeed(BASE_SPEED * 0.5 * 3.7, BASE_SPEED * 0.5);
 }
 
@@ -478,7 +477,14 @@ void driveControlledLeftTurn() {
  * Lets the mouse perform a smooth left turn.
  */
 void raceControlledLeftTurn() {
-    controlFixedSpeed(BASE_SPEED * 0.5, BASE_SPEED * 0.5 * 3.7);
+    /* wait until right turn becomes available 
+     * (if encoder ticks send the mouse too short)
+     */
+    int wall_left, wall_front, wall_right;
+    get_walls(&wall_left, &wall_front, &wall_right);
+    while (wall_left > 650);
+    
+    controlFixedSpeed(BASE_SPEED * 0.5, BASE_SPEED * 0.5 * 3.5);
 }
 
 
@@ -750,22 +756,19 @@ int getRaceMotionCompleted() {
             return (getAvgPositionInCounts() - start_position) > race_length_of_curve;
         case STOP:
             return 1;
+        case ROTATE_RIGHT:
+            // TODO implement
+            break;
+        case ROTATE_LEFT:
+            // TODO implement
+            break;
+        case HALF_FRONT:
+            return (distanceFromEncoderReadings() - start_position) > length_of_cell/2;
+            break;
         default:
             return 0;
     }
-    /*
-     * return raceMotionCompleted;
-     */
 }
-
-
-///**
-// * Function used to set the value of raceMotionCompleted during exploit phase.
-// * i = 1 if completed, i = 0 to reset.
-// */
-//void setRaceMotionCompleted(int i) {
-//    raceMotionCompleted = i;
-//}
 
 
 /**
@@ -854,6 +857,18 @@ void raceMotionFSM() {
             resetController();
             break;
         case EMPTY:
+            break;
+        case ROTATE_RIGHT:
+            // TODO implement
+            // rotate 90 degrees to the right (only needed in first state of exploit phase)
+            break;
+        case ROTATE_LEFT:
+            // TODO implement
+            // rotate 90 degrees to the left (only needed in first state of exploit phase)
+            break;
+        case HALF_FRONT:
+            // TODO implement
+            raceForward();
             break;
         default:
             break;

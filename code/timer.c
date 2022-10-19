@@ -107,9 +107,12 @@ void __attribute__((__interrupt__, auto_psv)) _T1Interrupt(void)
     //testMouseSmoothRightTurn();
     //testMouseSmoothLeftTurn();
     
-    // MOTION STATE MACHINE (explore phase)
-    //motionFSM();
     
+    
+    // if (explore phase) {
+    // MOTION STATE MACHINE (explore phase)
+    //motionFSM();   
+    // } else{
     // MOTION STATE MACHINE (exploit phase)
     raceMotionFSM();
 }

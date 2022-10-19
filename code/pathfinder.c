@@ -17,6 +17,8 @@ coord position;
 orientation dir;
 plannerState current_state_planner;
 
+int race_path_index;
+
 ///////////////////////////////////////////////////////////
 //                       DEBUG                           //
 ///////////////////////////////////////////////////////////
@@ -311,6 +313,7 @@ void exploit(unsigned int x, unsigned int y, orientation dir,
     // calc and save directions for optimal path ...
     int path_len = maze[x_dest][y_dest].flag;
     direction path[path_len+1];
+    direction race_path[path_len+2];
 
     coord pos = {x_dest, y_dest};
     path[path_len] = STOP;
@@ -366,14 +369,37 @@ void exploit(unsigned int x, unsigned int y, orientation dir,
     setMotionState(STOP);
     */
     
+    /* convert the path[] for the exploit phase and save the transformed path
+     *  in a new variable race_path[]
+     */
+    race_path_index = 0;
+    if (path[0] == RIGHT) {
+        race_path[0] = ROTATE_RIGHT;
+        race_path[1] = HALF_FRONT;
+        race_path_index = 2;
+    } else if (path[0] == LEFT) {
+        race_path[0] = ROTATE_LEFT;
+        race_path[1] = HALF_FRONT;
+        race_path_index = 2;
+    } else if (path[0] == FRONT) {
+        race_path[0] = HALF_FRONT;
+        race_path_index = 1;
+    }
+    for(int i = 1; path[i] != STOP; i++) {
+        race_path[race_path_index] = path[i];
+        race_path_index++;
+    }
+    race_path[race_path_index+1] = HALF_FRONT;
+    race_path[race_path_index+2] = STOP;
+    
     // replay path (experimental raceing version)
     // TODO: convert explore path to exploit path !!!
-    for(int i = 0; path[i] != STOP; i++) {
-        setMotionState(path[i]);
+    for(int i = 0; race_path[i] != STOP; i++) {
+        setRaceMotionState(race_path[i]);
         // wait for completion
-        while (!getMotionCompleted());
+        while (!getRaceMotionCompleted());
     }
-    setMotionState(STOP);
+    setRaceMotionState(STOP);
 }
 
 

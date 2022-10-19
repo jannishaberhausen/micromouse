@@ -4,7 +4,7 @@
 #include "pathfinder.h"
 
 // desired driving speed of the micromouse
-#define BASE_SPEED 15
+// #define BASE_SPEED 15
 #define MIN_SPEED 0.1
 
 #ifdef	__cplusplus
@@ -12,6 +12,7 @@ extern "C" {
 #endif
     
     extern int delay;
+    extern int BASE_SPEED;
     
     void setMotionState(direction newState);
     void setRaceMotionState(direction newState);

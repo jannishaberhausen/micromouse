@@ -291,6 +291,7 @@ void testMouseRaceSequence() {
         
         setup = 0;
     }
+    BASE_SPEED = 30;
     direction path[9];
     path[0] = FRONT;
     path[1] = LEFT;
