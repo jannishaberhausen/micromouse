@@ -29,6 +29,7 @@ extern "C" {
     void testMouseAlwaysFollowRightWall();
     void testMouseSmoothRightTurn();
     void testMouseSmoothLeftTurn();
+    void testMouseRaceSequence();
     
     void testRightTurn(int degrees);
     void motorBreak();

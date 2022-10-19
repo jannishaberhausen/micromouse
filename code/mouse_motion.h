@@ -14,21 +14,29 @@ extern "C" {
     extern int delay;
     
     void setMotionState(direction newState);
+    void setRaceMotionState(direction newState);
     int getMotionCompleted();
+    int getRaceMotionCompleted();
+    void setRaceMotionCompleted();
     int getRotationCompleted();
+    int getRaceRotationCompleted();
     void motionFSM();
+    void raceMotionFSM();
     
     void controlFixedSpeed(float left_speed, float right_speed);
     
     // Motion functions
     void resetController();
     void driveForward();
+    void raceForward();
     void driveRightTurn(int degrees);
     void driveLeftTurn(int degrees);
     void driveControlledRightTurn();
+    void raceControlledRightTurn();
     void driveControlledLeftTurn();
-    void driveSmoothRightTurn(int degrees);
-    void driveSmoothLeftTurn(int degrees);
+    void raceControlledLeftTurn();
+    void driveSmoothRightTurn();
+    void driveSmoothLeftTurn();
     void brake();
 
     // State Transition Checks 

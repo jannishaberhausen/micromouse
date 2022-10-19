@@ -355,15 +355,25 @@ void exploit(unsigned int x, unsigned int y, orientation dir,
         dir = tmp;
     }
     //printf("\n");
-
-    // replay path
+    
+    /*
+    // replay path (working version)
     for(int i = 0; path[i] != STOP; i++) {
         setMotionState(path[i]);
         // wait for completion
         while (!getMotionCompleted());
     }
     setMotionState(STOP);
+    */
     
+    // replay path (experimental raceing version)
+    // TODO: convert explore path to exploit path !!!
+    for(int i = 0; path[i] != STOP; i++) {
+        setMotionState(path[i]);
+        // wait for completion
+        while (!getMotionCompleted());
+    }
+    setMotionState(STOP);
 }
 
 

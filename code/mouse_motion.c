@@ -32,6 +32,8 @@ int length_of_cell = 2017;
 //float length_of_curve = 2.408553844;
 int length_of_curve = 809;
 
+int race_length_of_curve = 1350;
+
 // control parameters
 float k_p = 500;
 float k_i = 0.5;
@@ -74,6 +76,16 @@ int passed_archway;
 
 // state variable for the motor control FSM
 direction motionState = STOP;
+direction raceMotionState = STOP;
+
+/* boolean, only used during exploit phase 
+ * 0 = rotation by raceMotionFSM not completed, 1 = rotation completed
+ * There is a setter and getter function defined for raceMotionCompleted.
+ * raceMotionFSM has read-and-write access on raceMotionCompleted, while
+ * motionPlanner has only read access. That way motionPlanner can query when a 
+ * motion is marked as completed by the raceMotionFSM.
+ */
+int raceRotationCompleted = 0;
 
 
 /**
@@ -162,46 +174,6 @@ void controlFixedSpeed(float v_l, float v_r) {
     }
     
 }
-
-
-
-/**
- * Drives the wheels to a fixed position.
- */
-void controlFixedPosition(float x_l, float x_r) {
-    
-    
-    float left = getPositionInRad_1();
-    float right = getPositionInRad_2();
-    
-    // P-part
-    float error_l = x_l-left;
-    float error_r = x_r-right;
-    
-    // I-part
-    acc_error_left += error_l;
-    acc_error_right += error_r;
-    
-    //D-part
-    float d_error_l = error_l - last_error_left;
-    float d_error_r = error_r - last_error_right;
-    
-    last_error_left = error_l;
-    last_error_right = error_r;
-    
-    // uses the parameters from the top of this file
-    correction_left = error_l * k_p + acc_error_left * k_i + d_error_l * k_d;
-    correction_right = error_r * k_p + acc_error_right * k_i + d_error_r * k_d;
-    
-    
-    if(BASE_SPEED + correction_left < MOTOR_MAX)
-        MOTORL = BASE_SPEED + correction_left;
-    
-    if(BASE_SPEED + correction_right < MOTOR_MAX)
-        MOTORR = BASE_SPEED + correction_right;
-    
-}
-
 
 
 /**
@@ -386,6 +358,41 @@ void driveForward() {
 
 
 /**
+ * Controls the mouse's motion along a wall on the left side. 
+ * 
+ * Uses the left and right sensors to stabilize the mouse in the middle of the 
+ * corridor. Implements a closed-loop nested controller to do so. 
+ * Decides what walls are available at the current position and calls the
+ * appropriate driveForward* function.
+ */
+void raceForward() {
+    setMotorDirections_Forward();
+    
+    // decide which controller to use
+    int wall_left, wall_front, wall_right;
+    get_walls(&wall_left, &wall_front, &wall_right);
+    
+    if (wall_left) {
+        if (wall_right) {
+            // both walls present
+            driveForwardAlongCorridor();
+        } else {
+            // only left wall present
+            driveForwardAlongLeftWall();
+        }
+    } else {
+        if(wall_right) {
+            // only right wall present
+            driveForwardAlongRightWall();
+        } else {
+            // no walls present
+            driveForwardBlind();
+        }
+    }
+}
+
+
+/**
  * Lets the mouse turn clockwise by the specified angle.
  * 
  * @param
@@ -436,10 +443,7 @@ void driveLeftTurn(int degrees) {
 
 
 /**
- * Lets the mouse turn clockwise by the specified angle.
- * 
- * @param
- *      degrees (int): size of turning angle 
+ * Lets the mouse turn clockwise by 90 degrees.
  */
 void driveControlledRightTurn() {
     delay = 0;
@@ -451,10 +455,15 @@ void driveControlledRightTurn() {
 
 
 /**
- * Lets the mouse turn clockwise by the specified angle.
- * 
- * @param
- *      degrees (int): size of turning angle 
+ * Lets the mouse turn clockwise by 90 degrees.
+ */
+void raceControlledRightTurn() {
+    controlFixedSpeed(BASE_SPEED * 0.5 * 3.7, BASE_SPEED * 0.5);
+}
+
+
+/**
+ * Lets the mouse perform a smooth right turn. 
  */
 void driveControlledLeftTurn() {
     delay = 0;
@@ -465,47 +474,11 @@ void driveControlledLeftTurn() {
 }
 
 
-void driveSmoothRightTurn(int degrees) {
-    delay = 0;
-    
-    float encoder_start = getPositionInRad_2();
-
-    // calculate rad from degrees: degrees * 0.02755 = rad
-    // mouse rotation to wheel rotation: *1.55
-    float rotation_in_rad = (float) degrees * 0.01745 * 0.98685488;
-
-    setMotorDirections_Forward();
-
-    // ratio v_left_wheel to v_right_wheel: 3.52 to 1
-    MOTORL = 0.1 * 3.52 * MOTOR_MAX;
-    MOTORR = 0.1 * MOTOR_MAX;
-
-    while (abs(getPositionInRad_2() - encoder_start) < rotation_in_rad);
-    
-    MOTORL = 0;
-    MOTORR = 0;
-}
-
-
-void driveSmoothLeftTurn(int degrees) {
-    delay = 0;
-    
-    float encoder_start = getPositionInRad_2();
-
-    // calculate rad from degrees: degrees * 0.02755 = rad
-    // mouse rotation to wheel rotation: *1.55
-    float rotation_in_rad = (float) degrees * 0.01745 * 0.98685488;
-
-    setMotorDirections_Forward();
-
-    // ratio v_left_wheel to v_right_wheel: 1 to 3.52
-    MOTORL = 0.1 * MOTOR_MAX;
-    MOTORR = 0.1 * 3.52 * MOTOR_MAX;
-
-    while (abs(getPositionInRad_2() - encoder_start) < rotation_in_rad);
-    
-    MOTORL = 0;
-    MOTORR = 0;
+/**
+ * Lets the mouse perform a smooth left turn.
+ */
+void raceControlledLeftTurn() {
+    controlFixedSpeed(BASE_SPEED * 0.5, BASE_SPEED * 0.5 * 3.7);
 }
 
 
@@ -518,36 +491,6 @@ void brake() {
     setMotorDirections_Disable();
     MOTORL = 0;
     MOTORR = 0;
-    /*
-    // define errors as remaining velocity in the wheels
-    int error_left = getVelocityInCountsPerSample_1();
-    int error_right = getVelocityInCountsPerSample_2();
-    
-    // TODO: have not verified thresholds!!!
-    if(error_left < 100 && error_right < 100) {
-        return;
-    }
-
-    // set motor directions according to the errors
-    if (error_left > 0) {
-        setMotorDirectionLeft_Backward();
-    } else {
-        setMotorDirectionLeft_Forward();
-    }
-
-    if (error_right > 0) {
-        setMotorDirectionRight_Backward();
-    } else {
-        setMotorDirectionRight_Forward();
-    }
-
-    // factor for P control
-    float kp = 1;
-
-    // update motor speeds based on error readings
-    MOTORL += kp * error_left;
-    MOTORR -= kp * error_right;
-    */
 }
 
 
@@ -598,17 +541,6 @@ int checkForLeftCorner() {
     int left, right, front;
     get_walls(&left, &front, &right);
     return left;
-}
-
-
-/**
- * Checks whether the mouse has reached the goal.
- * 
- * @return
- *      1 = goal reached, 0 = goal not reached
- */
-int checkForGoal() {
-    
 }
 
 
@@ -709,7 +641,7 @@ int distanceFromEncoderReadings() {
 
 
 /**
- * Setter for the state of the motor control FSM.
+ * Setter for the state of the motor control FSM during explore phase.
  * 
  * Keeps track of the previously executed motions, and resets the controller
  * and the driven distance where necessary. Therefore, don't set the state
@@ -728,7 +660,25 @@ void setMotionState(direction newState) {
 
 
 /**
- * Function used by the motion planner to check completion of a motion.
+ * Setter for the state of the motor control FSM during exploit phase.
+ * 
+ * Keeps track of the previously executed motions, and resets the controller
+ * and the driven distance where necessary. Therefore, don't set the state
+ * manually!
+ */
+void setRaceMotionState(direction newState) {
+    if (newState != raceMotionState) {
+        resetController();
+    }
+    // always remember the original position to know when to stop
+    start_position = (getPositionInCounts_1()+getPositionInCounts_2()) / 2;
+    raceMotionState = newState;
+}
+
+
+/**
+ * Function used by the motion planner to check completion of a motion during 
+ * explore phase.
  * 
  * @return 1 if completed, 0 otherwise.
  */
@@ -747,7 +697,8 @@ int getRotationCompleted() {
 
 
 /**
- * Function used by the motion planner to check completion of a motion.
+ * Function used by the motion planner to check completion of a motion during 
+ * explore phase.
  * 
  * @return 1 if completed, 0 otherwise.
  */
@@ -761,6 +712,60 @@ int getMotionCompleted() {
             return 0;
     }
 }
+
+
+/**
+ * Function used by the motion planner to check completion of a motion during 
+ * exploit phase.
+ * 
+ * @return 1 if completed, 0 otherwise.
+ */
+int getRaceRotationCompleted() {
+    switch(raceMotionState) {
+        case LEFT:
+            return (getAvgPositionInCounts() - start_position) > length_of_curve;
+        case RIGHT:
+            return (getAvgPositionInCounts() - start_position) > length_of_curve;
+        case BACK:
+            return (getAvgPositionInCounts() - start_position) > 2*length_of_curve;
+        default:
+            return 0;
+    }
+}
+
+
+/**
+ * Function used by the motion planner to check completion of a motion during 
+ * exploit phase.
+ * 
+ * @return 1 if completed, 0 otherwise.
+ */
+int getRaceMotionCompleted() {
+    switch(raceMotionState) {
+        case FRONT:
+            return (distanceFromEncoderReadings() - start_position) > length_of_cell;
+        case LEFT:
+            return (getAvgPositionInCounts() - start_position) > race_length_of_curve;
+        case RIGHT:
+            return (getAvgPositionInCounts() - start_position) > race_length_of_curve;
+        case STOP:
+            return 1;
+        default:
+            return 0;
+    }
+    /*
+     * return raceMotionCompleted;
+     */
+}
+
+
+///**
+// * Function used to set the value of raceMotionCompleted during exploit phase.
+// * i = 1 if completed, i = 0 to reset.
+// */
+//void setRaceMotionCompleted(int i) {
+//    raceMotionCompleted = i;
+//}
 
 
 /**
@@ -808,6 +813,40 @@ void motionFSM() {
                 resetController();
                 setMotionState(FRONT);
             }
+            break;
+        case STOP:
+            // completed.
+            brake();
+            resetController();
+            break;
+        case EMPTY:
+            break;
+        default:
+            break;
+    }
+}
+
+
+/**
+ * Main function of the motor control during exploit phase.
+ * 
+ * Implements the finite state machine, and should be called by the timer ISR.
+ * Instructions should be sent to the motor control unit by changing the state 
+ * variable using setRaceMotionState.
+ */
+void raceMotionFSM() {
+    switch (raceMotionState) {
+        case FRONT:
+            // race forward, be done.
+            raceForward();
+            break;
+        case RIGHT:
+            // smooth 90 degrees right turn, driving from entry to exit of cell
+            raceControlledRightTurn();
+            break;
+        case LEFT:
+            // smooth 90 degrees left turn, driving from entry to exit of cell
+            raceControlledLeftTurn();
             break;
         case STOP:
             // completed.

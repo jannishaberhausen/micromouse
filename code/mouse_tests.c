@@ -267,7 +267,7 @@ void testMouseSmoothRightTurn(){
         setupMotors();
         setupEncoders();
 
-        driveSmoothRightTurn(90); 
+        // controlFixedSpeed(sth, sth);
         setup = 0;
     }   
 }
@@ -278,11 +278,36 @@ void testMouseSmoothLeftTurn(){
         setupMotors();
         setupEncoders();
 
-        driveSmoothLeftTurn(90); 
+        // controlFixedSpeed(sth, sth);
         setup = 0;
     }   
 }
 
+
+void testMouseRaceSequence() {
+    if (setup == 1) {
+        setupMotors();
+        setupEncoders();
+        
+        setup = 0;
+    }
+    direction path[9];
+    path[0] = FRONT;
+    path[1] = LEFT;
+    path[2] = FRONT;
+    path[3] = FRONT;
+    path[4] = RIGHT;
+    path[5] = FRONT;
+    path[6] = RIGHT;
+    path[7] = FRONT;
+    path[8] = STOP;
+    for(int i = 0; path[i] != STOP; i++) {
+        setRaceMotionState(path[i]);
+        // wait for completion
+        while (!getRaceMotionCompleted());
+    }
+    setRaceMotionState(STOP);
+}
 
 /* #############################################################################
  * ######## HAVE NOT CHANGED FUNCTIONs BELOW TO MATCH THE NEW FORMAT ###########
