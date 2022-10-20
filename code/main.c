@@ -102,10 +102,10 @@ int main()
     startTimer();
     
     //testMotionSequence();
-    testMouseRaceSequence();
+    //testMouseRaceSequence();
     
     // PLANNER STATE MACHINE
-    //plannerFSM();
+    plannerFSM();
     while(1)
     {
         

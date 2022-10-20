@@ -32,7 +32,7 @@ int length_of_cell = 2017;
 //float length_of_curve = 2.408553844;
 int length_of_curve = 809;
 
-int race_length_of_curve = 1400;
+int race_length_of_curve = 1300;
 
 // control parameters
 float k_p = 500;
@@ -149,18 +149,26 @@ void controlFixedSpeed(float v_l, float v_r) {
     last_error_right = error_r;
     
     // uses the parameters from the top of this file
-    correction_left = error_l * k_p + acc_error_left * k_i; // + d_error_l * k_d;
-    correction_right = error_r * k_p + acc_error_right * k_i; // + d_error_r * k_d;
+    correction_left = 900 + error_l * k_p + acc_error_left * k_i; // + d_error_l * k_d;
+    correction_right = 900 + error_r * k_p + acc_error_right * k_i; // + d_error_r * k_d;
     
     
-    if(900 + correction_left < MOTOR_MAX) {
-        MOTORL = 900 + correction_left;
+    if(correction_left < MOTOR_MAX) {
+        if (correction_left < 0) {
+            MOTORL = 0;
+        } else {
+            MOTORL = correction_left;
+        }
     } else {
         MOTORL = MOTOR_MAX;
     }
     
-    if(900 + correction_right < MOTOR_MAX) {
-        MOTORR = 900 + correction_right;
+    if(correction_right < MOTOR_MAX) {
+        if (correction_right < 0) {
+            MOTORR = 0;
+        } else {
+            MOTORR = correction_right;
+        }
     } else {
         MOTORR = MOTOR_MAX;
     }
@@ -297,38 +305,6 @@ void driveForward() {
     int wall_left, wall_front, wall_right;
     get_walls(&wall_left, &wall_front, &wall_right);
     
-    // recalibrate encoders
-    //// Using left and right walls
-//    if (wall_left != last_wall_l || wall_right != last_wall_r) {
-//        // Walls to the left and right have changed
-//        if (!passed_archway) {
-//            // Condition avoids resetting twice when passing a post
-//            passed_archway = 1;
-//            // distance driven:
-//            // 18cm / 2 - 5.2cm = 3.5cm driven, or 
-//            // 3.5cm / (6 pi cm / 16*33*4 ticks) = 392.1 ticks
-//            //setPosition(start_position + 426);
-//        }
-//    }
-    
-    //// Using the front wall
-    int unused, distance_front;
-    sharpRaw(&unused, &distance_front, &unused);
-    
-    if (wall_front) {
-        // We are driving too far, brake!
-        if (distance_front > 1200) {
-            // Recalibrate on front walls ony if there is a wall now
-            // no more forward motion now !!! 
-            setMotionState(STOP);
-        } else {
-            // Drive until we go to the first case
-            // disable motionComplete-mechanism
-            start_position = distanceFromEncoderReadings();
-        }
-    }
-    
-    
     if (wall_left) {
         if (wall_right) {
             // both walls present
@@ -455,9 +431,9 @@ void raceControlledRightTurn() {
      */
     int wall_left, wall_front, wall_right;
     get_walls(&wall_left, &wall_front, &wall_right);
-    while (wall_right > 650);
+    //while (wall_right);
     
-    controlFixedSpeed(BASE_SPEED * 0.5 * 3.7, BASE_SPEED * 0.5);
+    controlFixedSpeed(BASE_SPEED * 0.5 * 4.5, BASE_SPEED * 0.5);
 }
 
 
@@ -482,9 +458,9 @@ void raceControlledLeftTurn() {
      */
     int wall_left, wall_front, wall_right;
     get_walls(&wall_left, &wall_front, &wall_right);
-    while (wall_left > 650);
+    //while (wall_left);
     
-    controlFixedSpeed(BASE_SPEED * 0.5, BASE_SPEED * 0.5 * 3.5);
+    controlFixedSpeed(BASE_SPEED * 0.5, BASE_SPEED * 0.5 * 4.5);
 }
 
 
@@ -709,8 +685,25 @@ int getRotationCompleted() {
  * @return 1 if completed, 0 otherwise.
  */
 int getMotionCompleted() {
+
+    int unused, distance_front;
+    sharpRaw(&unused, &distance_front, &unused);
+
     switch(motionState) {
         case FRONT:
+            // Recalibrate on front walls ony if there is a wall now
+            if (distance_front > 650) {
+                // We are driving too far, brake!
+                if (distance_front > 1200) {
+                    // no more forward motion now !!! 
+                    return 1;
+                } else {
+                    // Drive until we go to the first case
+                    // disable motionComplete-mechanism
+                    return 0;
+                }
+            }
+
             return (distanceFromEncoderReadings() - start_position) > length_of_cell;
         case STOP:
             return 1;
@@ -747,8 +740,26 @@ int getRaceRotationCompleted() {
  * @return 1 if completed, 0 otherwise.
  */
 int getRaceMotionCompleted() {
+
+    // Recalibrate using the front wall
+    int unused, distance_front;
+    sharpRaw(&unused, &distance_front, &unused);
+
     switch(raceMotionState) {
         case FRONT:
+            // Recalibrate on front walls ony if there is a wall now
+            if (distance_front > 350) {
+                // We are driving too far, brake!
+                if (distance_front > 500) {
+                    // no more forward motion now !!! 
+                    return 1;
+                } else {
+                    // Drive until we go to the first case
+                    // disable motionComplete-mechanism
+                    return 0;
+                }
+            }
+            
             return (distanceFromEncoderReadings() - start_position) > length_of_cell;
         case LEFT:
             return (getAvgPositionInCounts() - start_position) > race_length_of_curve;
@@ -757,10 +768,10 @@ int getRaceMotionCompleted() {
         case STOP:
             return 1;
         case ROTATE_RIGHT:
-            // TODO implement
+            return (getAvgPositionInCounts() - start_position) > length_of_curve;
             break;
         case ROTATE_LEFT:
-            // TODO implement
+            return (getAvgPositionInCounts() - start_position) > length_of_curve;
             break;
         case HALF_FRONT:
             return (distanceFromEncoderReadings() - start_position) > length_of_cell/2;
@@ -859,15 +870,15 @@ void raceMotionFSM() {
         case EMPTY:
             break;
         case ROTATE_RIGHT:
-            // TODO implement
             // rotate 90 degrees to the right (only needed in first state of exploit phase)
+            driveControlledRightTurn();
             break;
         case ROTATE_LEFT:
-            // TODO implement
             // rotate 90 degrees to the left (only needed in first state of exploit phase)
+            driveControlledLeftTurn();
             break;
         case HALF_FRONT:
-            // TODO implement
+            // drive forward by half a cell
             raceForward();
             break;
         default:

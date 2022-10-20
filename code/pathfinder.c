@@ -177,11 +177,11 @@ direction explore(unsigned int x, unsigned int y, orientation dir) {
             // select next open wall to explore
             //TODO: prefer going straight
             for (next = 0; next < 4; next ++) {
-                if (pos->walls[next] == WAY) {
+                if (pos->walls[(dir+next)%4] == WAY) {
                     // will be fully explored when we come back
-                    pos->walls[next] = EXPLORED;
+                    pos->walls[(dir+next)%4] = EXPLORED;
                     //go on to explore this path
-                    return (next - dir)%4;
+                    return next;
                 }
             }
 
@@ -262,51 +262,44 @@ void exploit(unsigned int x, unsigned int y, orientation dir,
         if(pos.x == x_dest && pos.y == y_dest) {
             break;
         }
-
-        if(current->walls[NORTH] == WAY) {
-            next = &maze[pos.x][pos.y+1];
-            if(next->flag < 0) {
-                next->walls[SOUTH] = ENTRY;
-                next->flag = current->flag + 1;
-                frontier[tail].x = pos.x;
-                frontier[tail].y = pos.y + 1;
-                tail = (tail + 1) % (SIZE*SIZE);
-            }
+        
+        orientation entry_orientation = dir;
+        for(int i = 0; i < 4; i++) {
+            if(current->walls[i] == ENTRY)
+                entry_orientation = (i+2)%4;
         }
 
-        if(current->walls[EAST] == WAY) {
-            next = &maze[pos.x+1][pos.y];
-            if(next->flag < 0) {
-                next->walls[WEST] = ENTRY;
-                next->flag = current->flag + 1;
-                frontier[tail].x = pos.x + 1;
-                frontier[tail].y = pos.y;
-                tail = (tail + 1) % (SIZE*SIZE);
+        for (int i = 0; i < 4; i++) {
+            orientation side = (entry_orientation+i)%4;
+            
+            if(current->walls[side] == WAY) {
+                next = &maze[pos.x][pos.y+1];
+                if(next->flag < 0) {
+                    next->walls[(side+2)%4] = ENTRY;
+                    next->flag = current->flag + 1;
+                    switch(side) {
+                        case NORTH:
+                            frontier[tail].x = pos.x;
+                            frontier[tail].y = pos.y + 1;
+                            break;
+                        case EAST:
+                            frontier[tail].x = pos.x + 1;
+                            frontier[tail].y = pos.y;
+                            break;
+                        case SOUTH:
+                            frontier[tail].x = pos.x;
+                            frontier[tail].y = pos.y - 1;
+                            break;
+                        case WEST:
+                            frontier[tail].x = pos.x - 1;
+                            frontier[tail].y = pos.y;
+                            break;
+                    }
+                    tail = (tail + 1) % (SIZE*SIZE);
+                }
             }
         }
-
-        if(current->walls[SOUTH] == WAY) {
-            next = &maze[pos.x][pos.y-1];
-            if(next->flag < 0) {
-                next->walls[NORTH] = ENTRY;
-                next->flag = current->flag + 1;
-                frontier[tail].x = pos.x;
-                frontier[tail].y = pos.y - 1;
-                tail = (tail + 1) % (SIZE*SIZE);
-            }
-        }
-
-        if(current->walls[WEST] == WAY) {
-            next = &maze[pos.x-1][pos.y];
-            if(next->flag < 0) {
-                next->walls[EAST] = ENTRY;
-                next->flag = current->flag + 1;
-                frontier[tail].x = pos.x - 1;
-                frontier[tail].y = pos.y;
-                tail = (tail + 1) % (SIZE*SIZE);
-            }
-        }
-
+        
         head = (head+1)%(SIZE*SIZE);
     }
 
@@ -394,6 +387,7 @@ void exploit(unsigned int x, unsigned int y, orientation dir,
     
     // replay path (experimental raceing version)
     // TODO: convert explore path to exploit path !!!
+    BASE_SPEED = 30;
     for(int i = 0; race_path[i] != STOP; i++) {
         setRaceMotionState(race_path[i]);
         // wait for completion
@@ -426,6 +420,7 @@ void plannerFSM() {
     // value will be changed by the button ISR
     current_state_planner = WAIT_EXPLORE;
     while(current_state_planner == WAIT_EXPLORE);
+    current_state_planner = EXPLORE;
     
     
     LED2 = LEDON;
@@ -525,6 +520,7 @@ void plannerFSM() {
     // value will be changed by the button ISR
     current_state_planner = WAIT_EXPLOIT;
     while(current_state_planner == WAIT_EXPLOIT);
+    current_state_planner = EXPLOIT;
     
     
     ////////////////////////////////////////////////////////////

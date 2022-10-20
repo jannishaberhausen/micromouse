@@ -3,9 +3,10 @@
 
 #include "timer.h"
 #include "IOconfig.h"
-//#include "hw_tests.h"
+#include "hw_tests.h"
 //#include "mouse_tests.h"
 #include "mouse_motion.h"
+#include "pathfinder.h"
 
 /**
  * set up TIMER1
@@ -86,6 +87,7 @@ void __attribute__((__interrupt__, auto_psv)) _T1Interrupt(void)
     //testEncoders();
     //testSensorsLR();
     //testSensorsF();
+    //testSensorsLRWalls();
     //testMotion_P();
     //testMotion_PID(10, 10);
     //testMotion_nested();
@@ -107,12 +109,9 @@ void __attribute__((__interrupt__, auto_psv)) _T1Interrupt(void)
     //testMouseSmoothRightTurn();
     //testMouseSmoothLeftTurn();
     
-    
-    
-    // if (explore phase) {
-    // MOTION STATE MACHINE (explore phase)
-    //motionFSM();   
-    // } else{
-    // MOTION STATE MACHINE (exploit phase)
-    raceMotionFSM();
+    if (current_state_planner == EXPLORE) {
+        motionFSM();
+    } else if (current_state_planner == EXPLOIT) {
+        raceMotionFSM();
+    }
 }
