@@ -175,7 +175,6 @@ direction explore(unsigned int x, unsigned int y, orientation dir) {
         case 1:
             // cell not yet fully explored, walls known
             // select next open wall to explore
-            //TODO: prefer going straight
             for (next = 0; next < 4; next ++) {
                 if (pos->walls[(dir+next)%4] == WAY) {
                     // will be fully explored when we come back
@@ -273,28 +272,34 @@ void exploit(unsigned int x, unsigned int y, orientation dir,
             orientation side = (entry_orientation+i)%4;
             
             if(current->walls[side] == WAY) {
-                next = &maze[pos.x][pos.y+1];
+                // move that way
+                coord next_pos;
+                switch(side) {
+                    case NORTH:
+                        next_pos.x = pos.x;
+                        next_pos.y = pos.y + 1;
+                        break;
+                    case EAST:
+                        next_pos.x = pos.x + 1;
+                        next_pos.y = pos.y;
+                        break;
+                    case SOUTH:
+                        next_pos.x = pos.x;
+                        next_pos.y = pos.y - 1;
+                        break;
+                    case WEST:
+                        next_pos.x = pos.x - 1;
+                        next_pos.y = pos.y;
+                        break;
+                }
+                next = &maze[next_pos.x][next_pos.y];
+
+                // if not yet visited, add to frontier
                 if(next->flag < 0) {
                     next->walls[(side+2)%4] = ENTRY;
                     next->flag = current->flag + 1;
-                    switch(side) {
-                        case NORTH:
-                            frontier[tail].x = pos.x;
-                            frontier[tail].y = pos.y + 1;
-                            break;
-                        case EAST:
-                            frontier[tail].x = pos.x + 1;
-                            frontier[tail].y = pos.y;
-                            break;
-                        case SOUTH:
-                            frontier[tail].x = pos.x;
-                            frontier[tail].y = pos.y - 1;
-                            break;
-                        case WEST:
-                            frontier[tail].x = pos.x - 1;
-                            frontier[tail].y = pos.y;
-                            break;
-                    }
+                    frontier[tail].x = next_pos.x;
+                    frontier[tail].y = next_pos.y;
                     tail = (tail + 1) % (SIZE*SIZE);
                 }
             }
@@ -350,7 +355,6 @@ void exploit(unsigned int x, unsigned int y, orientation dir,
         path[i] = (path[i] - dir)%4;
         dir = tmp;
     }
-    //printf("\n");
     
     /*
     // replay path (working version)
@@ -382,11 +386,10 @@ void exploit(unsigned int x, unsigned int y, orientation dir,
         race_path[race_path_index] = path[i];
         race_path_index++;
     }
-    race_path[race_path_index+1] = HALF_FRONT;
-    race_path[race_path_index+2] = STOP;
+    race_path[race_path_index] = HALF_FRONT;
+    race_path[race_path_index+1] = STOP;
     
     // replay path (experimental raceing version)
-    // TODO: convert explore path to exploit path !!!
     BASE_SPEED = 30;
     for(int i = 0; race_path[i] != STOP; i++) {
         setRaceMotionState(race_path[i]);

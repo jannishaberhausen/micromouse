@@ -5,6 +5,8 @@
 extern "C" {
 #endif
     void DEBUG_get_walls(int *left, int *front, int *right);
+    void DEBUG_setMotionState(direction newState);
+    int DEBUG_getMotionCompleted();
 
     void printMaze(cell maze[SIZE][SIZE]);
     void prettyPrintMaze(cell maze[SIZE][SIZE]);

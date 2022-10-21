@@ -80,7 +80,12 @@ void printMaze(cell maze[SIZE][SIZE]) {
                     printf(" |");
                     break;
             }
-            printf(" %d ", maze[x][y].flag);
+
+            if(maze[x][y].flag < 0)
+                printf(" - ");
+            else
+                printf(" %d ", maze[x][y].flag);
+
             switch (maze[x][y].walls[EAST]) {
                 case UNKNOWN:
                     printf("? ");
@@ -368,14 +373,13 @@ int test_main() {
     ////////////////////////////////////////////////////////////
     
     // busy wait until started from switch ISR
-    //TODO: change state from switch ISR
     //while(test_current_state_planner == WAIT_EXPLORE);
     
     ////////////////////////////////////////////////////////////
     //                  2. Explore Phase                      //
     ////////////////////////////////////////////////////////////
     
-    direction move = STOP;
+    direction move;
     x = 0;
     y = 0;
     test_dir = NORTH;
@@ -441,7 +445,6 @@ int test_main() {
     test_current_state_planner = WAIT_EXPLOIT;
     
     // busy wait until started from switch ISR
-    //TODO: change state from switch ISR
     //while(test_current_state_planner == WAIT_EXPLOIT);
     
     
