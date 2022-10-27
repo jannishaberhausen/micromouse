@@ -80,6 +80,10 @@ direction motionState = STOP;
 direction raceMotionState = STOP;
 
 
+/*#############################################################################
+ ############################## HELPER FUNCTIONS ##############################
+ ############################################################################*/
+
 /**
  * Reset the encoders and all error terms.
  * 
@@ -114,6 +118,17 @@ void resetController() {
 }
 
 
+/**
+ * Distance driven since the last encoder reset.
+ * 
+ * Returns the distance driven in the current motion, in encoder ticks.
+ * Used to check for completion of a motion.
+ * 
+ * @return the distance driven since the last encoder reset.
+ */
+int distanceFromEncoderReadings() {
+    return ((getPositionInCounts_1() + getPositionInCounts_2()) / 2);
+}
 
 /*#############################################################################
  ################# FUNCTIONS DEFINING THE MOTION OF THE MOUSE #################
@@ -475,7 +490,6 @@ void brake() {
     MOTORR = 0;
 }
 
-
 /*#############################################################################
  ###################### STATE TRANSITION CHECKS FOR FSM #######################
  ############################################################################*/
@@ -525,11 +539,9 @@ int checkForLeftCorner() {
     return left;
 }
 
-
 /*#############################################################################
  ############################## HARDWARE MACROS ###############################
  ############################################################################*/
-
 
 /**
  * Sets the direction of the motors to disable.
@@ -548,7 +560,6 @@ void setMotorDirections_Forward() {
     setMotorDirectionLeft_Forward();
     setMotorDirectionRight_Forward();
 }
-
 
 /**
  * Sets the direction of the motors such that the mouse turns right.
@@ -608,19 +619,9 @@ void setMotorDirectionRight_Backward() {
     MOTINR2 = 1;
 }
 
-
-/**
- * Distance driven since the last encoder reset.
- * 
- * Returns the distance driven in the current motion, in encoder ticks.
- * Used to check for completion of a motion.
- * 
- * @return the distance driven since the last encoder reset.
- */
-int distanceFromEncoderReadings() {
-    return ((getPositionInCounts_1() + getPositionInCounts_2()) / 2);
-}
-
+/*#############################################################################
+ ################## HELPER FUNCTIONS OF FINITE STATE MACHINE ##################
+ ############################################################################*/
 
 /**
  * Setter for the state of the motor control FSM during explore phase.
@@ -640,7 +641,6 @@ void setMotionState(direction newState) {
     motionState = newState;
 }
 
-
 /**
  * Setter for the state of the motor control FSM during exploit phase.
  * 
@@ -656,7 +656,6 @@ void setRaceMotionState(direction newState) {
     start_position = (getPositionInCounts_1()+getPositionInCounts_2()) / 2;
     raceMotionState = newState;
 }
-
 
 /**
  * Function used by the motion planner to check completion of a motion during 
@@ -759,7 +758,6 @@ int getRaceMotionCompleted() {
                     return 0;
                 }
             }
-            
             return (distanceFromEncoderReadings() - start_position) > length_of_cell;
         case LEFT:
             return (getAvgPositionInCounts() - start_position) > race_length_of_curve;
@@ -781,6 +779,9 @@ int getRaceMotionCompleted() {
     }
 }
 
+/*#############################################################################
+ ##################### MOTION STATE MACHINES OF THE MOUSE #####################
+ ############################################################################*/
 
 /**
  * Main function of the motor control.

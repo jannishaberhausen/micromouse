@@ -70,6 +70,8 @@ void __attribute__((__interrupt__, auto_psv)) _T1Interrupt(void)
 {
     IFS0bits.T1IF = 0;           // reset Timer 1 interrupt flag
     
+// ############################################################################
+    
     // Uncomment the test case you want to run. Only run one at a time,
     // some of them contain conflicting hardware configurations.
     // Later test cases rely on functions tested in the previous ones. 
@@ -108,6 +110,8 @@ void __attribute__((__interrupt__, auto_psv)) _T1Interrupt(void)
     //testRotation();
     //testMouseSmoothRightTurn();
     //testMouseSmoothLeftTurn();
+    
+// ############################################################################
     
     if (current_state_planner == EXPLORE) {
         motionFSM();
