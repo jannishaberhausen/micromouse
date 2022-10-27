@@ -414,18 +414,9 @@ void exploit(unsigned int x, unsigned int y, orientation dir,
         /*#############################################################################
          ### DRIVE THE SHORTEST PATH WITH RACING CONTROLLER (EXPERIMENTAL VERSION) ####
          ############################################################################*/
+        
         BASE_SPEED = 30;
         for(int i = 0; race_path[i] != STOP; i++) {
-    //        if(race_path[i] == FRONT) {
-    //            if(race_path[i+1] == FRONT) {
-    //                BASE_SPEED = 40;
-    //            } else {
-    //                BASE_SPEED = 30;
-    //            }
-    //        } else {
-    //            BASE_SPEED = 20;
-    //        }
-
             setRaceMotionState(race_path[i]);
             // wait for completion
             while (!getRaceMotionCompleted());

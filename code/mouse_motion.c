@@ -32,7 +32,7 @@ int length_of_cell = 2017;
 //float length_of_curve = 2.408553844;
 int length_of_curve = 809;
 
-int race_length_of_curve = 1300;
+int race_length_of_curve = 1400;
 
 // control parameters
 float k_p = 400;
@@ -634,7 +634,7 @@ void setMotionState(direction newState) {
     if (newState != motionState)
         resetController();
     // always remember the original position to know when to stop
-    start_position = (getPositionInCounts_1()+getPositionInCounts_2()) / 2;
+    start_position = getAvgPositionInCounts();
     passed_archway = 0;
     // reset encoders
     //setupEncoders();
@@ -649,11 +649,11 @@ void setMotionState(direction newState) {
  * manually!
  */
 void setRaceMotionState(direction newState) {
-    if (newState != raceMotionState) {
+    //if (newState != raceMotionState) {
         resetController();
-    }
+    //}
     // always remember the original position to know when to stop
-    start_position = (getPositionInCounts_1()+getPositionInCounts_2()) / 2;
+    start_position = getAvgPositionInCounts();
     raceMotionState = newState;
 }
 
@@ -741,13 +741,15 @@ int getRaceRotationCompleted() {
 int getRaceMotionCompleted() {
 
     // Recalibrate using the front wall
-    int unused, distance_front;
-    sharpRaw(&unused, &distance_front, &unused);
+    int distance_left, distance_front, distance_right;
+    sharpRaw(&distance_left, &distance_front, &distance_right);
+    int wall_left = distance_left > 650;
+    int wall_right = distance_right > 650;
 
     switch(raceMotionState) {
         case FRONT:
             // Recalibrate on front walls ony if there is a wall now
-            if (distance_front > 350) {
+            if (distance_front > 400) {
                 // We are driving too far, brake!
                 if (distance_front > 500) {
                     // no more forward motion now !!! 
@@ -758,7 +760,12 @@ int getRaceMotionCompleted() {
                     return 0;
                 }
             }
-            return (distanceFromEncoderReadings() - start_position) > length_of_cell;
+            if(last_wall_l != wall_left || last_wall_r != wall_right) {
+                start_position = getAvgPositionInCounts() - length_of_cell + 504;
+            }
+            last_wall_l = wall_left;
+            last_wall_r = wall_right;
+            return (getAvgPositionInCounts() - start_position) > length_of_cell;
         case LEFT:
             return (getAvgPositionInCounts() - start_position) > race_length_of_curve;
         case RIGHT:

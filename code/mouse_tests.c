@@ -292,16 +292,31 @@ void testMouseRaceSequence() {
         setup = 0;
     }
     BASE_SPEED = 30;
-    direction path[9];
-    path[0] = FRONT;
-    path[1] = LEFT;
+    direction path[24];
+    path[0] = ROTATE_RIGHT;
+    path[1] = HALF_FRONT;
     path[2] = FRONT;
     path[3] = FRONT;
-    path[4] = RIGHT;
+    path[4] = LEFT;
     path[5] = FRONT;
-    path[6] = RIGHT;
+    path[6] = LEFT;
     path[7] = FRONT;
-    path[8] = STOP;
+    path[8] = FRONT;
+    path[9] = RIGHT;
+    path[10] = FRONT;
+    path[11] = FRONT;
+    path[12] = RIGHT;
+    path[13] = FRONT;
+    path[14] = RIGHT;
+    path[15] = FRONT;
+    path[16] = LEFT;
+    path[17] = FRONT;
+    path[18] = RIGHT;
+    path[19] = FRONT;
+    path[20] = STOP;
+    path[21] = FRONT;
+    path[22] = HALF_FRONT;
+    path[23] = STOP;
     for(int i = 0; path[i] != STOP; i++) {
         setRaceMotionState(path[i]);
         // wait for completion
