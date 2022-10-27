@@ -433,7 +433,7 @@ void driveControlledRightTurn() {
     
     setMotorDirections_RightTurn();
 
-    controlFixedSpeed(BASE_SPEED, BASE_SPEED);
+    controlFixedSpeed(15, 15);
 }
 
 
@@ -460,7 +460,7 @@ void driveControlledLeftTurn() {
     
     setMotorDirections_LeftTurn();
 
-    controlFixedSpeed(BASE_SPEED, BASE_SPEED);
+    controlFixedSpeed(15, 15);
 }
 
 
@@ -642,6 +642,24 @@ void setMotionState(direction newState) {
 }
 
 /**
+ * Setter for the state of the motor control FSM during explore phase.
+ * 
+ * Keeps track of the previously executed motions, and resets the controller
+ * and the driven distance where necessary. Therefore, don't set the state
+ * manually!
+ */
+void setSaveRaceState(direction newState, direction nextState) {
+    if (newState != motionState)
+        resetController();
+    // always remember the original position to know when to stop
+    start_position = getAvgPositionInCounts();
+    passed_archway = 0;
+    // reset encoders
+    //setupEncoders();
+    motionState = newState;
+}
+
+/**
  * Setter for the state of the motor control FSM during exploit phase.
  * 
  * Keeps track of the previously executed motions, and resets the controller
@@ -802,6 +820,7 @@ void motionFSM() {
     if(delay < 50 && (motionState == LEFT || motionState == RIGHT)) {
         //setMotionState(FRONT);
     }
+    
     
     // Rotation functions use busy waiting - completion check for the
     // motion planner and multiple calls during one motion are only relevant

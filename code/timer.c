@@ -113,6 +113,9 @@ void __attribute__((__interrupt__, auto_psv)) _T1Interrupt(void)
     
 // ############################################################################
     
+    ////////////////////////////////////////////////////////////////////////
+    //        When using the save variant, always use motionFSM()!        //
+    ////////////////////////////////////////////////////////////////////////
     if (current_state_planner == EXPLORE) {
         motionFSM();
     } else if (current_state_planner == EXPLOIT) {

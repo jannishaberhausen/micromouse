@@ -390,6 +390,7 @@ void exploit(unsigned int x, unsigned int y, orientation dir,
         current_state_planner = WAIT_EXPLOIT;
         while(current_state_planner == WAIT_EXPLOIT);
         current_state_planner = EXPLOIT;
+        
     
         // we need the motors to drive
         setMotionState(STOP);
@@ -400,21 +401,28 @@ void exploit(unsigned int x, unsigned int y, orientation dir,
         /*#############################################################################
          ##### DRIVE THE SHORTEST PATH WITH REGULAR CONTROLLER (WORKING VERSION) ######
          ############################################################################*/
-        /*
+        BASE_SPEED = 35;
         // replay path (working version)
         for(int i = 0; path[i] != STOP; i++) {
+            if(path[i+1] == FRONT) {
+                BASE_SPEED = 35;
+                LED4 = LEDOFF;
+            } else {
+                BASE_SPEED = 25;
+                LED4 = LEDON;
+            }
             setMotionState(path[i]);
             // wait for completion
             while (!getMotionCompleted());
         }
         setMotionState(STOP);
-         */
+        
         
         
         /*#############################################################################
          ### DRIVE THE SHORTEST PATH WITH RACING CONTROLLER (EXPERIMENTAL VERSION) ####
          ############################################################################*/
-        
+        /*
         BASE_SPEED = 30;
         for(int i = 0; race_path[i] != STOP; i++) {
             setRaceMotionState(race_path[i]);
@@ -422,6 +430,7 @@ void exploit(unsigned int x, unsigned int y, orientation dir,
             while (!getRaceMotionCompleted());
         }
         setRaceMotionState(STOP);
+         */
     }
 }
 
