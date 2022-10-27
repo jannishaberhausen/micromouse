@@ -35,7 +35,7 @@ int length_of_curve = 809;
 int race_length_of_curve = 1300;
 
 // control parameters
-float k_p = 500;
+float k_p = 400;
 float k_i = 0.5;
 float k_d = 0;
 
@@ -149,8 +149,8 @@ void controlFixedSpeed(float v_l, float v_r) {
     last_error_right = error_r;
     
     // uses the parameters from the top of this file
-    correction_left = 900 + error_l * k_p + acc_error_left * k_i; // + d_error_l * k_d;
-    correction_right = 900 + error_r * k_p + acc_error_right * k_i; // + d_error_r * k_d;
+    correction_left = 800 + error_l * k_p + acc_error_left * k_i; // + d_error_l * k_d;
+    correction_right = 800 + error_r * k_p + acc_error_right * k_i; // + d_error_r * k_d;
     
     
     if(correction_left < MOTOR_MAX) {

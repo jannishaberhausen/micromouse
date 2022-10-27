@@ -356,16 +356,6 @@ void exploit(unsigned int x, unsigned int y, orientation dir,
         dir = tmp;
     }
     
-    /*
-    // replay path (working version)
-    for(int i = 0; path[i] != STOP; i++) {
-        setMotionState(path[i]);
-        // wait for completion
-        while (!getMotionCompleted());
-    }
-    setMotionState(STOP);
-    */
-    
     /* convert the path[] for the exploit phase and save the transformed path
      *  in a new variable race_path[]
      */
@@ -390,13 +380,49 @@ void exploit(unsigned int x, unsigned int y, orientation dir,
     race_path[race_path_index+1] = STOP;
     
     // replay path (experimental raceing version)
-    BASE_SPEED = 30;
-    for(int i = 0; race_path[i] != STOP; i++) {
-        setRaceMotionState(race_path[i]);
-        // wait for completion
-        while (!getRaceMotionCompleted());
+    while(1) {
+    
+        // we need the button to start
+        setupSwitch();
+
+        // value will be changed by the button ISR
+        current_state_planner = WAIT_EXPLOIT;
+        while(current_state_planner == WAIT_EXPLOIT);
+        current_state_planner = EXPLOIT;
+    
+        // we need the motors to drive
+        setMotionState(STOP);
+        setupMotors();
+        resetController();
+        
+        
+        // replay path (working version)
+        for(int i = 0; path[i] != STOP; i++) {
+            setMotionState(path[i]);
+            // wait for completion
+            while (!getMotionCompleted());
+        }
+        setMotionState(STOP);
+        
+        
+        BASE_SPEED = 30;
+        for(int i = 0; race_path[i] != STOP; i++) {
+    //        if(race_path[i] == FRONT) {
+    //            if(race_path[i+1] == FRONT) {
+    //                BASE_SPEED = 40;
+    //            } else {
+    //                BASE_SPEED = 30;
+    //            }
+    //        } else {
+    //            BASE_SPEED = 20;
+    //        }
+
+            setRaceMotionState(race_path[i]);
+            // wait for completion
+            while (!getRaceMotionCompleted());
+        }
+        setRaceMotionState(STOP);
     }
-    setRaceMotionState(STOP);
 }
 
 
@@ -517,25 +543,12 @@ void plannerFSM() {
     //              3. Wait for Exploit Phase                 //
     ////////////////////////////////////////////////////////////
     
-    // we need the button to start
-    setupSwitch();
-    
-    // value will be changed by the button ISR
-    current_state_planner = WAIT_EXPLOIT;
-    while(current_state_planner == WAIT_EXPLOIT);
-    current_state_planner = EXPLOIT;
     
     
     ////////////////////////////////////////////////////////////
     //                  4. Exploit Phase                      //
     ////////////////////////////////////////////////////////////
     
-    
-    // we need the motors to drive
-    
-    setMotionState(STOP);
-    setupMotors();
-    resetController();
     
     LED2 = LEDON;
     LED4 = LEDON;
