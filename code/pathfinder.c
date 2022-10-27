@@ -355,6 +355,7 @@ void exploit(unsigned int x, unsigned int y, orientation dir,
         path[i] = (path[i] - dir)%4;
         dir = tmp;
     }
+
     
     /* convert the path[] for the exploit phase and save the transformed path
      *  in a new variable race_path[]
@@ -396,6 +397,10 @@ void exploit(unsigned int x, unsigned int y, orientation dir,
         resetController();
         
         
+        /*#############################################################################
+         ##### DRIVE THE SHORTEST PATH WITH REGULAR CONTROLLER (WORKING VERSION) ######
+         ############################################################################*/
+        /*
         // replay path (working version)
         for(int i = 0; path[i] != STOP; i++) {
             setMotionState(path[i]);
@@ -403,8 +408,12 @@ void exploit(unsigned int x, unsigned int y, orientation dir,
             while (!getMotionCompleted());
         }
         setMotionState(STOP);
+         */
         
         
+        /*#############################################################################
+         ### DRIVE THE SHORTEST PATH WITH RACING CONTROLLER (EXPERIMENTAL VERSION) ####
+         ############################################################################*/
         BASE_SPEED = 30;
         for(int i = 0; race_path[i] != STOP; i++) {
     //        if(race_path[i] == FRONT) {

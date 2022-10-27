@@ -97,15 +97,16 @@ int main()
     
     // start the timer.
     /*
-     * Uncomment the test case you want to run in the timer ISR.
+     * Uncomment the test case you want to run in the timer ISR in timer.c.
      */
     startTimer();
     
+    // PLANNER STATE MACHINE
+    plannerFSM();
     //testMotionSequence();
     //testMouseRaceSequence();
     
-    // PLANNER STATE MACHINE
-    plannerFSM();
+    
     while(1)
     {
         
