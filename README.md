@@ -14,3 +14,9 @@ Competitions and conferences are still run regularly.
 ----
 
 Watch a video of Speedy Gonzales in action [here](https://youtu.be/TwjPslRqBsg).
+
+### Getting Started
+
+Notice `main.c` starts the T1 timer `startTimer()` and the finite state machine (FSM) `plannerFSM()` which realizes the planning of mouse motions before running in an infinite loop in which the behaviour is controlled by the planning FSM and the motion FSM which in turn is called every 50 ms by a timer interupt in T1 (see `timer.c`).
+    
+The most important motions (and their respective controllers) are defined in `mouse_motion.c` and the business logic for the path planning is implemented in `pathfinder.c`.
